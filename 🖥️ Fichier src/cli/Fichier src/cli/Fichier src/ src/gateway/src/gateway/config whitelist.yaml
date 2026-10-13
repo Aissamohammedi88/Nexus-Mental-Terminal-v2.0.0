@@ -1,0 +1,42 @@
+# Commandes autorisées - ADAPTER SELON BESOINS
+allowed_commands:
+  # Lecture système
+  - ls
+  - cat
+  - head
+  - tail
+  - grep
+  - find
+  - df
+  - free
+  - ps
+  - top
+  
+  # Réseau (lecture)
+  - ip addr
+  - netstat -tuln
+  - ss -tuln
+  - ping -c 3
+  
+  # Paquets (info seulement)
+  - apt list --installed
+  - dpkg -l
+  
+  # Développement
+  - git status
+  - git log
+  - python3 -c
+  - node -e
+  
+  # Éditeurs
+  - nano
+  - vim
+
+# Arguments interdits même sur commandes autorisées
+forbidden_arguments:
+  - "/etc/shadow"
+  - "/etc/passwd"
+  - "/root/"
+  - "/dev/null"
+  - "--force"
+  - "-rf /"
