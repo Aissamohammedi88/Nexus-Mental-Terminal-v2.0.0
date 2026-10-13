@@ -47,5 +47,681 @@ Nexus Mental Terminal fournit cette sandbox.
 
 ```bash
 git clone https://github.com/Aissamohammedi88/nexus-mental-terminal.git
+Utilisation rapide
+Mode interactif
+bash
+
+python3 -m nexus_mental
+
+text
+
+user@nexus:/home/user$ apt install nginx
+user@nexus:/home/user$ systemctl status docker
+user@nexus:/home/user$ add-apt-repository ppa:canonical-kernel-team/unstable
+user@nexus:/home/user$ snap install firefox
+user@nexus:/home/user$ python3 -c "print(2**64)"
+
+En tant que bibliothèque
+python
+
+from nexus_mental import MentalTerminal
+
+t = MentalTerminal()
+
+# Bash
+r = t.bash("ls -la /etc")
+print(r.stdout)
+
+# Python
+r = t.python("sum(range(100))")
+print(r.stdout)
+
+# apt
+r = t.bash("apt install docker.io")
+print(r.stdout)
+
+# État
+print(t.get_state())
+print(t.stats())
+
+Pour agents IA (OpenAI / Anthropic / Gemini)
+python
+
+from nexus_mental import MentalTerminalTool
+
+tool = MentalTerminalTool()
+schema = tool.get_tool_schema()   # pour function calling
+result = tool.execute_tool("mental_bash", {"command": "apt list"})
+
+Commandes supportées
+
+Voir docs/COMMANDS.md.
+
+Résumé :
+Catégorie	Commandes
+Fichiers	ls cd pwd mkdir rm cp mv cat touch tree stat file du find
+Texte	echo printf head tail wc grep sort uniq rev tac nl
+Système	whoami hostname uname date uptime id ps top df free
+Env	env export set unset alias history clear
+Ubuntu	apt apt-get apt-cache dpkg add-apt-repository
+Snap	snap install remove list find
+Flatpak	flatpak install remove list remotes
+systemd	systemctl journalctl service
+Hash	md5sum sha256sum base64
+Math	expr bc factor
+Divers	uuidgen cal basename dirname readlink sleep seq yes
+PPAs Ubuntu simulés
+PPA	Catégorie	Risque
+canonical-kernel-team/unstable	kernel	high
+canonical-hwe-team/experimental-next	kernel	high
+damentz/liquorix	kernel	medium
+graphics-drivers/ppa	graphics	medium
+ubuntu-toolchain-r/test	toolchain	medium
+deadsnakes/ppa	python	low
+git-core/ppa	vcs	low
+ondrej/php	php	low
+ondrej/nginx	web	low
+neovim-ppa/unstable	editor	low
+
+Liste complète : apt list-ppas
+Noyaux Linux simulés
+bash
+
+apt install linux-image-generic
+apt install linux-image-lowlatency
+apt install linux-image-liquorix-amd64
+apt install linux-image-aws
+
+Architecture
+text
+
+┌─────────────────────────────────────────────┐
+│           MentalTerminal                    │
+│  ┌───────────────────────────────────────┐  │
+│  │  VirtualFileSystem (FHS)              │  │
+│  │  ├── /home/user                       │  │
+│  │  ├── /etc, /usr, /var, /proc          │  │
+│  │  └── files virtuels en RAM            │  │
+│  └───────────────────────────────────────┘  │
+│  ┌───────────────────────────────────────┐  │
+│  │  MentalBash                           │  │
+│  │  ├── 100+ commandes                   │  │
+│  │  ├── pipelines |                      │  │
+│  │  ├── redirections > < >>              │  │
+│  │  └── opérateurs ; &&                  │  │
+│  └───────────────────────────────────────┘  │
+│  ┌───────────────────────────────────────┐  │
+│  │  Sous-systèmes                        │  │
+│  │  ├── MentalApt + PPAs                 │  │
+│  │  ├── MentalSnap                       │  │
+│  │  ├── MentalFlatpak                    │  │
+│  │  ├── MentalSystemd                    │  │
+│  │  └── MentalSyscalls                   │  │
+│  └───────────────────────────────────────┘  │
+│  ┌───────────────────────────────────────┐  │
+│  │  MentalPython (REPL persistant)       │  │
+│  └───────────────────────────────────────┘  │
+└─────────────────────────────────────────────┘
+
+Détails : docs/ARCHITECTURE.md
+Sécurité
+
+✅ Aucun accès au système réel
+✅ Aucune commande réseau
+✅ Aucun accès disque
+✅ Isolation complète en RAM
+
+⚠️ Ce n'est PAS un vrai sandbox de sécurité — c'est un simulateur pour agents IA. Pour un vrai sandbox, utiliser Docker, Firejail, ou bubblewrap.
+Roadmap
+
+    ☑
+
+    v1.0 — bash + vfs + python
+    ☑
+
+    v2.0 — apt + snap + flatpak + systemd + PPAs
+    □
+
+    v2.1 — systemd user + cgroups
+    □
+
+    v2.2 — docker/podman simulés
+    □
+
+    v3.0 — noyaux Linux chargeables
+    □
+
+    v3.1 — QEMU mental
+    □
+
+    v3.2 — interface web (xterm.js)
+
+Contribuer
+
+Voir CONTRIBUTING.md.
+bash
+
+git clone https://github.com/Aissamohammedi88/nexus-mental-terminal.git
+cd nexus-mental-terminal
+python3 -m pytest tests/
+
+Auteur
+
+Aissa Mohammedi (DGK)
+
+    GitHub : @Aissamohammedi88
+
+Licence
+
+NEXUS-OPEN-2.0 — voir LICENSE.
+
+Attribution obligatoire. Pas de présentation comme système réel.
+text
+
+
+---
+
+## 4. `CHANGELOG.md`
+
+```markdown
+# Changelog
+
+Toutes les modifications notables de ce projet.
+
+Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/)
+Versionnage : [SemVer](https://semver.org/lang/fr/)
+
+## [2.0.0] — 2026-10-13
+
+### Ajouté
+- 📦 **apt** simulé — install, remove, update, upgrade, search, show, list
+- 📦 **apt-cache** — search, show, policy
+- 📦 **dpkg** — list, install
+- 📦 **add-apt-repository** — 14 PPAs Ubuntu
+- 📸 **snap** — install, remove, list, find (15 paquets)
+- 📦 **flatpak** — install, remove, list, remotes (8 apps)
+- ⚙️ **systemd** — systemctl (start/stop/restart/enable/disable/status/list), journalctl, service
+- 🧬 **PPAs Ubuntu** — canonical-kernel-team, hwe-team, liquorix, graphics-drivers, etc.
+- 🔧 **Noyaux Linux** — 11 variantes (generic, lowlatency, kvm, aws, azure, gcp, oracle, oem, hwe, raspi, liquorix)
+- 🔧 **syscalls UNIX** — uname, getpid, getuid, getgid
+- 📁 **FHS complet** — /etc, /usr, /var, /proc, /sys, /home, /root, /opt, /srv, /mnt, /media, /boot
+
+### Modifié
+- Schéma de base étendu
+- `MentalTerminal.get_state()` retourne plus d'infos
+- Aide étendue (`help`)
+
+## [1.0.0] — 2026-09-01
+
+### Ajouté
+- 🐚 Shell bash virtuel — 60+ commandes
+- 📁 Filesystem virtuel en RAM
+- 🐍 REPL Python persistant
+- 🛠️ Tool wrapper pour function calling
+- 🔐 Hashing (md5, sha256, base64)
+- 🧮 Math (expr, factor)
+
+5. CONTRIBUTING.md
+markdown
+
+# Contribuer à Nexus Mental Terminal
+
+Merci de votre intérêt.
+
+## Règles
+
+1. **Ne pas** ajouter de code qui touche au système réel
+2. **Ne pas** ajouter de commandes réseau réelles
+3. **Ne pas** ajouter d'accès disque réel
+4. Tout doit rester en RAM
+
+## Workflow
+
+```bash
+# 1. Fork + clone
+git clone https://github.com/VOTRE_PSEUDO/nexus-mental-terminal.git
+cd nexus-mental-terminal
+
+# 2. Branche
+git checkout -b feature/ma-fonctionnalite
+
+# 3. Coder
+
+# 4. Tests
+python3 -m pytest tests/
+
+# 5. Commit
+git commit -m "feat: ajout de la commande X"
+
+# 6. Push
+git push origin feature/ma-fonctionnalite
+
+# 7. Pull Request
+
+Convention de commit
+
+    feat: nouvelle fonctionnalité
+
+    fix: correction
+
+    docs: documentation
+
+    test: tests
+
+    refactor: refactoring
+
+    chore: maintenance
+
+Style
+
+    PEP 8
+
+    Type hints
+
+    Docstrings
+
+    Pas de dépendances externes
+
+Tests
+
+Tout ajout doit venir avec un test.
+text
+
+
+---
+
+## 6. `pyproject.toml`
+
+```toml
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nexus-mental-terminal"
+version = "2.0.0"
+description = "Terminal virtuel en mémoire pour agents IA — Ubuntu/Unix Edition"
+readme = "README.md"
+license = {text = "NEXUS-OPEN-2.0"}
+authors = [{name = "Aissa Mohammedi", email = "dgk@nexus.local"}]
+requires-python = ">=3.10"
+keywords = ["terminal", "virtual", "ubuntu", "linux", "ai", "agent", "sandbox", "mental", "simulation"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: Other/Proprietary License",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: System :: Emulators",
+    "Topic :: Software Development :: Testing",
+]
+
+[project.urls]
+Homepage = "https://github.com/Aissamohammedi88/nexus-mental-terminal"
+Repository = "https://github.com/Aissamohammedi88/nexus-mental-terminal"
+Issues = "https://github.com/Aissamohammedi88/nexus-mental-terminal/issues"
+
+[project.scripts]
+nexus-mental = "nexus_mental.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["nexus_mental*"]
+
+7. requirements.txt
+text
+
+# Aucune dépendance externe.
+# Nexus Mental Terminal utilise uniquement la stdlib Python.
+#
+# Optionnel (développement) :
+# pytest>=7.0
+
+8. docs/COMMANDS.md
+markdown
+
+# Commandes supportées
+
+## Fichiers
+
+| Commande | Description |
+|----------|-------------|
+| `ls [-la] [path]` | Liste un dossier |
+| `cd [path]` | Change de dossier |
+| `pwd` | Affiche le dossier courant |
+| `mkdir [-p] path` | Crée un dossier |
+| `rmdir path` | Supprime un dossier vide |
+| `rm [-rf] path` | Supprime un fichier/dossier |
+| `cp src dst` | Copie |
+| `mv src dst` | Déplace |
+| `cat file` | Affiche le contenu |
+| `touch file` | Crée un fichier vide |
+| `tree [path]` | Arborescence |
+| `stat path` | Statistiques |
+| `file path` | Type de fichier |
+| `du [path]` | Taille |
+| `find [path] -name pattern` | Recherche |
+
+## Ubuntu
+
+| Commande | Description |
+|----------|-------------|
+| `apt install pkg` | Installe |
+| `apt remove pkg` | Désinstalle |
+| `apt update` | Met à jour |
+| `apt upgrade` | Met à niveau |
+| `apt search pattern` | Recherche |
+| `apt show pkg` | Détails |
+| `apt list` | Liste installés |
+| `apt list-ppas` | Liste PPAs disponibles |
+| `add-apt-repository ppa:...` | Ajoute PPA |
+
+## Snap
+
+| Commande | Description |
+|----------|-------------|
+| `snap install pkg` | Installe |
+| `snap remove pkg` | Supprime |
+| `snap list` | Liste |
+| `snap find pattern` | Cherche |
+
+## Flatpak
+
+| Commande | Description |
+|----------|-------------|
+| `flatpak install app` | Installe |
+| `flatpak remove app` | Supprime |
+| `flatpak list` | Liste |
+| `flatpak remotes` | Dépôts |
+
+## systemd
+
+| Commande | Description |
+|----------|-------------|
+| `systemctl start svc` | Démarre |
+| `systemctl stop svc` | Arrête |
+| `systemctl restart svc` | Redémarre |
+| `systemctl enable svc` | Active |
+| `systemctl disable svc` | Désactive |
+| `systemctl status svc` | État |
+| `systemctl list-units` | Liste |
+| `journalctl` | Logs |
+
+9. docs/UBUNTU.md
+markdown
+
+# Ubuntu dans le terminal mental
+
+## PPAs disponibles
+
+```bash
+apt list-ppas
+
+Ajouter un PPA
+bash
+
+add-apt-repository ppa:canonical-kernel-team/unstable
+
+Installer un noyau
+bash
+
+apt install linux-image-generic
+apt install linux-image-lowlatency
+apt install linux-image-liquorix-amd64
+
+Installer Docker
+bash
+
+apt install docker.io
+systemctl start docker
+systemctl enable docker
+systemctl status docker
+
+Installer Nginx
+bash
+
+apt install nginx
+systemctl start nginx
+systemctl status nginx
+
+Installer PostgreSQL
+bash
+
+apt install postgresql
+systemctl start postgresql
+
+text
+
+
+---
+
+## 10. `docs/ARCHITECTURE.md`
+
+```markdown
+# Architecture
+
+## Vue d'ensemble
+
+MentalTerminal
+├── VirtualFileSystem (RAM)
+│ ├── /home/user
+│ ├── /etc, /usr, /var, /proc, /sys
+│ └── FHS complet
+├── MentalBash
+│ ├── 100+ commandes
+│ ├── Pipelines, redirections
+│ └── Sous-systèmes
+│ ├── MentalApt + PPAs
+│ ├── MentalSnap
+│ ├── MentalFlatpak
+│ ├── MentalSystemd
+│ └── MentalSyscalls
+└── MentalPython (REPL)
+text
+
+
+## Flux d'exécution
+
+command string
+│
+▼
+MentalBash.execute()
+│
+├─► pipeline ? ─► récursion
+├─► redirect ? ─► récursion
+├─► ; ou && ? ─► récursion
+│
+▼
+_parse_command() ─► [name, args...]
+│
+▼
+commandsname
+│
+▼
+CommandResult
+text
+
+
+## Extensibilité
+
+Ajouter une commande :
+
+```python
+def _cmd_ma_commande(self, args):
+    r = CommandResult()
+    r.stdout = "Hello\n"
+    return r
+
+# Enregistrer
+self.commands["ma-commande"] = self._cmd_ma_commande
+
+text
+
+
+---
+
+## 11. `examples/demo.py`
+
+```python
+#!/usr/bin/env python3
+"""Démo Nexus Mental Terminal."""
+
+from nexus_mental import MentalTerminal
+
+t = MentalTerminal()
+
+print("=== DÉMO ===\n")
+
+# 1. Bash de base
+print(">>> ls /etc")
+print(t.bash("ls /etc").stdout)
+
+# 2. apt
+print(">>> apt install nginx")
+print(t.bash("apt install nginx").stdout)
+
+# 3. PPA
+print(">>> add-apt-repository ppa:canonical-kernel-team/unstable")
+print(t.bash("add-apt-repository ppa:canonical-kernel-team/unstable").stdout)
+
+# 4. systemd
+print(">>> systemctl status nginx")
+print(t.bash("systemctl status nginx").stdout)
+
+# 5. Python
+print(">>> 2**64")
+print(t.python("2**64").stdout)
+
+# 6. État
+print(">>> state")
+print(t.get_state())
+
+12. examples/ai_integration.py
+python
+
+#!/usr/bin/env python3
+"""Intégration avec un agent IA (OpenAI / Anthropic / Gemini)."""
+
+from nexus_mental import MentalTerminalTool
+
+tool = MentalTerminalTool()
+schema = tool.get_tool_schema()
+
+# Exemple avec OpenAI
+# from openai import OpenAI
+# client = OpenAI()
+# response = client.chat.completions.create(
+#     model="gpt-4",
+#     messages=[{"role": "user", "content": "Installe nginx"}],
+#     tools=schema,
+#     tool_choice="auto",
+# )
+
+# Simulation d'appel
+result = tool.execute_tool("mental_bash", {"command": "apt install nginx"})
+print(result)
+
+13. tests/test_bash.py
+python
+
+"""Tests MentalBash."""
+
+from nexus_mental import MentalTerminal
+
+
+def test_ls():
+    t = MentalTerminal()
+    r = t.bash("ls /etc")
+    assert r.exit_code == 0
+    assert "hostname" in r.stdout
+
+
+def test_echo():
+    t = MentalTerminal()
+    r = t.bash("echo hello")
+    assert r.stdout.strip() == "hello"
+
+
+def test_apt_install():
+    t = MentalTerminal()
+    r = t.bash("apt install nginx")
+    assert r.exit_code == 0
+    assert "nginx" in t.bash.apt.installed
+
+
+def test_ppa():
+    t = MentalTerminal()
+    r = t.bash("add-apt-repository ppa:deadsnakes/ppa")
+    assert r.exit_code == 0
+    assert "deadsnakes/ppa" in t.bash.apt.installed_ppas
+
+
+def test_systemd():
+    t = MentalTerminal()
+    r = t.bash("systemctl start docker")
+    assert r.exit_code == 0
+    assert t.bash.systemd.services["docker"]["state"] == "active"
+
+
+def test_python():
+    t = MentalTerminal()
+    r = t.python("sum(range(100))")
+    assert "4950" in r.stdout
+
+14. Commandes Git — publication
+bash
+
+# 1. Créer le dossier
+mkdir nexus-mental-terminal
+cd nexus-mental-terminal
+
+# 2. Initialiser Git
+git init
+git branch -M main
+
+# 3. Créer la structure
+mkdir -p nexus_mental examples tests docs
+
+# 4. Placer les fichiers (voir ci-dessus)
+)
+git config user.name "Aissa Mohammedi"
+git config user.email nodepy6@proton.me
+
+git add .
+git commit -m "feat: initial release v2.0.0"
+
+
+#    Va sur https://github.com/new
+#    Nom : nexus-mental-terminal
+#    Description : Terminal virtuel en mémoire pour agents IA — Ubuntu/Unix Edition
+#    Public, pas de README auto
+
+
+git remote add origin https://github.com/Aissamohammedi88/nexus-mental-terminal.git
+git push -u origin main
+
+15. Auto-génération — un seul script
+
+Si tu veux tout créer en une commande, voici le script :
+bash
+
+#!/usr/bin/env bash
+# generate_repo.sh — crée toute la structure du dépôt
+set -euo pipefail
+
+REPO="nexus-mental-terminal"
+mkdir -p "$REPO"/{nexus_mental,examples,tests,docs}
+cd "$REPO"
+
+# ... (les fichiers ci-dessus, copiés manuellement)
+
+git init -b main
+git add .
+git commit -m "feat: initial release v2.0.0"
+git remote add origin https://github.com/Aissamohammedi88/nexus-mental-terminal.git
+git push -u origin main
+
+echo "✓ Dépôt publié : https://github.com/Aissamohammedi88/nexus-mental-terminal"
 cd nexus-mental-terminal
 python3 -m nexus_mental
