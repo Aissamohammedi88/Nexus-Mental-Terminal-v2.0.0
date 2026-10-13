@@ -1,0 +1,35 @@
+nexus-terminal-gateway/
+├── src/
+│   ├── __init__.py
+│   ├── gateway/
+│   │   ├── __init__.py
+│   │   ├── ssh_client.py          # Connexion SSH réelle
+│   │   ├── api_server.py          # API REST sécurisée
+│   │   ├── websocket_handler.py   # Streaming temps réel
+│   │   └── command_validator.py   # Validation/sécurité des commandes
+│   ├── auth/
+│   │   ├── __init__.py
+│   │   ├── jwt_auth.py            # Authentification JWT
+│   │   └── rbac.py                # Contrôle d'accès (RBAC)
+│   ├── audit/
+│   │   ├── __init__.py
+│   │   └── logger.py              # Journalisation complète
+│   └── config/
+│       ├── __init__.py
+│       └── settings.py            # Configuration centralisée
+├── config/
+│   ├── default.yaml               # Config par défaut
+│   ├── whitelist.yaml             # Commandes autorisées
+│   └── blacklist.yaml             # Commandes interdites
+├── tests/
+│   └── test_security.py
+├── scripts/
+│   ├── setup.sh                   # Installation sécurisée
+│   └── backup.sh                  # Sauvegarde
+├── docker/
+│   ├── Dockerfile
+│   └── docker-compose.yml
+├── requirements.txt
+├── pyproject.toml
+├── SECURITY.md
+└── README.md
