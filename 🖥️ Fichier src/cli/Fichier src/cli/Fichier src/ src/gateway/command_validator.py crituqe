@@ -1,0 +1,233 @@
+#!/usr/bin/env python3
+"""
+Validation et sécurisation des commandes entrantes
+NE JAMAIS EXÉCUTER DE COMMANDES NON VALIDÉES
+"""
+
+import re
+from pathlib import Path
+from typing import Set, List, Optional
+from enum import Enum
+from dataclasses import dataclass
+
+class RiskLevel(Enum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+@dataclass
+class ValidationResult:
+    allowed: bool
+    risk_level: RiskLevel
+    reason: str
+    sanitized_command: Optional[str] = None
+
+# === LISTES DE SÉCURITÉ ===
+WHITE_LIST_COMMANDS: Set[str] = {
+    # Navigation
+    "ls", "cd", "pwd", "tree",
+    # Lecture
+    "cat", "less", "more", "head", "tail", "file",
+    # Recherche
+    "find", "grep", "locate", "which", "whereis",
+    # Système (lecture seule)
+    "uname", "date", "uptime", "whoami", "id",
+    "df", "du", "free", "ps", "top", "htop",
+    # Réseau (lecture seule)
+    "ip", "ifconfig", "netstat", "ss", "ping",
+    "nslookup", "dig", "host",
+    # Archivage
+    "tar", "zip", "unzip", "gzip", "gunzip",
+    # Éditeurs (non destructifs)
+    "nano", "vim", "vi", "code",
+    # Développement
+    "git", "python3", "python", "node", "npm",
+    "make", "cmake", "gcc", "g++", "clang",
+    # Utilitaires
+    "echo", "env", "export", "alias", "history",
+    "chmod", "chown", "mkdir", "touch", "cp", "mv",
+    "rm", "ln", "basename", "dirname",
+    # Hash/Crypto (safe)
+    "md5sum", "sha256sum", "openssl",
+}
+
+BLACK_LIST_COMMANDS: Set[str] = {
+    # Destruction
+    "rm -rf /", "dd if=", "mkfs", "fdisk",
+    "parted", "wipe", "shred",
+    # Réseau malveillant
+    "nmap", "nikto", "hydra", "john",
+    "aircrack-ng", "tcpdump", "wireshark",
+    # Privilege escalation
+    "su -", "pkexec", "doas",
+    # Backdoor
+    "nc -lp", "netcat -lp", "socat -l",
+    "bash -i >& /dev/tcp/", "python -c 'import socket'",
+    # Autres
+    "reboot", "shutdown", "poweroff", "halt",
+    "iptables", "firewall-cmd", "ufw",
+    "sudo su", "sudo -i",
+}
+
+DANGEROUS_PATTERNS: List[re.Pattern] = [
+    re.compile(r'\brm\s+.*\s+/(\s|$)'),  # rm sur racine
+    re.compile(r'\bdd\s+if='),           # dd input
+    re.compile(r'\bmknod\s+/dev/'),      # création device
+    re.compile(r'>\s*/etc/'),            # écriture config
+    re.compile(r'\bwget\b.*\|\s*bash'),  # télécharge et exécute
+    re.compile(r'\bcurl\b.*\|\s*bash'),
+    re.compile(r';\s*\w+\s+.*>&\s*/dev/tcp'),  # reverse shell
+    re.compile(r'\beval\b'),             # eval arbitraire
+    re.compile(r'\bexec\b.*\(/'),        # exec arbitraire
+]
+
+SUDOCOMMAND_PATTERN = re.compile(r'^\s*(sudo)\s+')
+
+class CommandValidator:
+    """Validateur de commandes - NE PAS BYPASSER"""
+    
+    def __init__(self, 
+                 whitelist_enabled: bool = True,
+                 blacklist_enabled: bool = True,
+                 allow_sudo: bool = False):
+        self.whitelist_enabled = whitelist_enabled
+        self.blacklist_enabled = blacklist_enabled
+        self.allow_sudo = allow_sudo
+        self._preload_blacklist()
+    
+    def _preload_blacklist(self):
+        """Charger blacklist depuis fichier si existe"""
+        try:
+            blacklist_path = Path("/etc/nexus/blacklist.txt")
+            if blacklist_path.exists():
+                with open(blacklist_path) as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith('#'):
+                            BLACK_LIST_COMMANDS.add(line)
+        except Exception:
+            pass
+    
+    def validate(self, command: str) -> ValidationResult:
+        """
+        Valide une commande avant exécution.
+        Retourne ALWAYS DENY pour les commandes dangereuses.
+        """
+        original = command.strip()
+        
+        # Vérifier longueur
+        if len(original) > 4096:
+            return ValidationResult(
+                allowed=False,
+                risk_level=RiskLevel.CRITICAL,
+                reason="Commande trop longue (> 4096 caractères)"
+            )
+        
+        # Détecter sudo
+        if SUDOCOMMAND_PATTERN.match(original):
+            if not self.allow_sudo:
+                return ValidationResult(
+                    allowed=False,
+                    risk_level=RiskLevel.HIGH,
+                    reason="sudo interdit par politique de sécurité"
+                )
+            # Extraire la commande réelle
+            command = SUDOCOMMAND_PATTERN.sub('', original)
+        else:
+            command = original
+        
+        # Vérifier blacklist
+        if self.blacklist_enabled:
+            if self._matches_blacklist(command):
+                return ValidationResult(
+                    allowed=False,
+                    risk_level=RiskLevel.CRITICAL,
+                    reason="Commande dans la liste noire de sécurité"
+                )
+            
+            # Vérifier patterns dangereux
+            for pattern in DANGEROUS_PATTERNS:
+                if pattern.search(command):
+                    return ValidationResult(
+                        allowed=False,
+                        risk_level=RiskLevel.CRITICAL,
+                        reason="Pattern dangereux détecté"
+                    )
+        
+        # Vérifier whitelist
+        if self.whitelist_enabled:
+            cmd_base = command.split()[0] if command.split() else ""
+            if cmd_base not in WHITE_LIST_COMMANDS:
+                # Autoriser certains patterns
+                if not self._is_safe_extension(command):
+                    return ValidationResult(
+                        allowed=False,
+                        risk_level=RiskLevel.MEDIUM,
+                        reason="Commande non autorisée (hors whitelist)"
+                    )
+        
+        # Évaluer le risque
+        risk_level = self._assess_risk(command)
+        
+        return ValidationResult(
+            allowed=True,
+            risk_level=risk_level,
+            reason="Validation passée",
+            sanitized_command=command
+        )
+    
+    def _matches_blacklist(self, command: str) -> bool:
+        """Vérifier contre blacklist"""
+        cmd_lower = command.lower()
+        
+        for blacklisted in BLACK_LIST_COMMANDS:
+            if blacklisted.lower() in cmd_lower:
+                return True
+        
+        # Patterns regex blacklist
+        danger_patterns = [
+            r'/dev/(null|zero|random|urandom)',
+            r'\b\(?\brm\b.*\s+-rf\s+',
+            r'\bchmod\s+[0-7]*[4567][0-7]{2}',  # chmod setuid
+            r'\bsystemctl\s+(restart|stop)\s+(ssh|sshd)',
+        ]
+        
+        for pattern in danger_patterns:
+            if re.search(pattern, cmd_lower):
+                return True
+        
+        return False
+    
+    def _is_safe_extension(self, command: str) -> bool:
+        """Vérifier si commande est une extension sûre"""
+        # Autoriser arguments après commande whitelist
+        parts = command.split()
+        if parts and parts[0] in WHITE_LIST_COMMANDS:
+            # Verifier pas d'arguments dangereux
+            dangerous_args = ['/dev/', '/etc/shadow', '/root/']
+            for part in parts[1:]:
+                for danger in dangerous_args:
+                    if danger in part:
+                        return False
+            return True
+        return False
+    
+    def _assess_risk(self, command: str) -> RiskLevel:
+        """Assessement fin du niveau de risque"""
+        cmd_lower = command.lower()
+        
+        # HIGH: Modificateur système
+        risky_keywords = ['apt', 'yum', 'dnf', 'service', 'systemctl']
+        if any(k in cmd_lower for k in risky_keywords):
+            return RiskLevel.HIGH
+        
+        # MEDIUM: Écriture fichiers utilisateur
+        write_keywords = ['>', '>>', 'tee', 'cp', 'mv']
+        if any(k in cmd_lower for k in write_keywords):
+            return RiskLevel.MEDIUM
+        
+        return RiskLevel.LOW
+
+# Instance globale
+validator = CommandValidator()
