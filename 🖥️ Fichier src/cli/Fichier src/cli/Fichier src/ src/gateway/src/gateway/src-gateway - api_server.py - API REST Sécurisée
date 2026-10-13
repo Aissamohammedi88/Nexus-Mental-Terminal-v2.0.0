@@ -1,0 +1,118 @@
+#!/usr/bin/env python3
+"""
+API REST sécurisée pour intégration IA
+"""
+
+from fastapi import FastAPI, HTTPException, Depends, Header, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from pydantic import BaseModel
+from typing import Optional
+import jwt
+from datetime import datetime, timedelta
+
+from .ssh_client import SSHClient, SSHConfig
+from .command_validator import validator, RiskLevel
+from ..auth.jwt_auth import verify_token
+from ..audit.logger import audit_log
+
+app = FastAPI(title="Nexus Terminal Gateway", version="4.0.0")
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+
+security = HTTPBearer()
+
+class ExecuteRequest(BaseModel):
+    command: str
+    server_id: Optional[str] = None
+    session_id: Optional[str] = None
+
+class ExecuteResponse(BaseModel):
+    success: bool
+    exit_code: Optional[int]
+    stdout: str
+    stderr: str
+    duration_ms: float
+    risk_level: str
+
+@app.post("/api/v1/execute", response_model=ExecuteResponse)
+async def execute_command(
+    request: ExecuteRequest,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """
+    Exécuter commande distante via SSH.
+    Requires: Valid JWT token in Authorization header
+    """
+    # Vérifier token
+    try:
+        payload = verify_token(credentials.credentials)
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Token invalide")
+    
+    # Validation sécurité
+    validation = validator.validate(request.command)
+    
+    # Audit logging
+    await audit_log({
+        "event": "command_execute",
+        "user": payload.get("user_id"),
+        "command": request.command,
+        "validation_result": validation.allowed,
+        "risk_level": validation.risk_level.value
+    })
+    
+    if not validation.allowed:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "error": "Commande bloquée par politique de sécurité",
+                "reason": validation.reason,
+                "risk_level": validation.risk_level.value
+            }
+        )
+    
+    # Exécution SSH
+    start_time = datetime.now()
+    
+    try:
+        config = SSHConfig(
+            host=getattr(request, 'server_id', 'localhost'),
+            username=payload.get('username', 'nexus'),
+            # Charge depuis vault/secrets manager en production
+        )
+        
+        client = SSHClient(config)
+        exit_code, stdout, stderr = await client.execute(validation.sanitized_command)
+        
+        duration = (datetime.now() - start_time).total_seconds() * 1000
+        
+        return ExecuteResponse(
+            success=exit_code == 0,
+            exit_code=exit_code,
+            stdout=stdout[:1024*1024],  # Limiter taille sortie
+            stderr=stderr[:1024*1024],
+            duration_ms=round(duration, 2),
+            risk_level=validation.risk_level.value
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/v1/servers")
+async def list_servers(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Liste des serveurs configurés"""
+    # Récupérer depuis configuration sécurisée
+    return {"servers": ["server-1", "server-2"]}
+
+@app.get("/api/v1/stats")
+async def get_stats(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Statistiques d'utilisation"""
+    return {
+        "total_commands": 0,
+        "blocked_commands": 0,
+        "active_sessions": 0
+    }
+
+@app.get("/health")
+async def health_check():
+    """Endpoint santé"""
+    return {"status": "healthy", "version": "4.0.0"}
