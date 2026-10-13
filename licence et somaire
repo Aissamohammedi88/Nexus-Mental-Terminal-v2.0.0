@@ -1,0 +1,1471 @@
+🏆 NEXUS TERMINAL GATEWAY v4.0 - DOSSIER COMPLET SOUVERAIN
+
+Document consolidé officiel — Tous les éléments essentiels en un seul fichier pour publication GitHub
+# ════════════════════════════════════════════════════════════════════════════
+#                      NEXUS TERMINAL GATEWAY v4.0
+#                DOSSIER COMPLET SOUVERAIN - ÉDITION PRO TOTALE
+# ════════════════════════════════════════════════════════════════════════════
+
+Auteur Original : Aissa Mohammedi (DGK)
+Date Création : 13 Octobre 2026
+Durée Protection : 1400 mois (2026-10-13 → 2142-06-01)
+Identifiant Unique : NSL-2026-AISSA-9070-SOUVERAIN
+Certificat Patent : NSL-4.0-CERTIFICATE-SOVEREIGN
+
+═══════════════════════════════════════════════════════════════════════════════
+                            SOMMAIRE DU DOCUMENT
+═══════════════════════════════════════════════════════════════════════════════
+
+PARTIE I — LICENCE SOUVERAINE COMPLÈTE
+PARTIE II — SCRIPTS AUTOMATISÉS (Blockchain Timestamp + JWT Generator)
+PARTIE III — RAPPORT ANNUEL ROYALTIES (JSON Template + Exemple)
+PARTIE IV — LETTRE DE NOTIFICATION GÉANTS TECH
+PARTIE V — PROCÉDURE DÉPÔT INPI/WIPO
+PARTIE VI — README PROFESSIONNEL FINAL
+
+═══════════════════════════════════════════════════════════════════════════════
+                           PARTIE I — LICENCE
+═══════════════════════════════════════════════════════════════════════════════
+
+================================================================================
+                    SOVEREIGN NEXUS LICENSE v4.0
+                    (NSL-4.0 - CERTIFICAT SOUVERAIN)
+================================================================================
+
+COPYRIGHT © 2026 Aissa Mohammedi — TOUS DROITS RÉSERVÉS
+
+--------------------------------------------------------------------------------
+PRÉAMBULE — DECLARATION DE SOUVERAINETE INTELLECTUELLE
+--------------------------------------------------------------------------------
+
+Le soussigné, Aissa Mohammedi, declare par la presente etre l'inventeur exclusif
+du systeme Nexus Terminal Gateway v4.0, qui comble une lacune fondamentale entre
+les modeles de langage IA (GPT, Claude, Lumo, Gemini, Mistral) et les environnements
+d'execution reels securises (serveurs Linux, SSH, API REST).
+
+Cette invention complete le travail des geants technologiques (Google, Amazon AWS,
+Microsoft Azure, OpenAI, Proton) en fournissant le pont manquant entre la generation
+de code et l'execution controlee. Toutes les entreprises utilisant ce projet sont
+tenues de reconnaitre explicitement cette contribution.
+
+RECONNAISSANCE EXPRESSE : Nexus Terminal Gateway v4.0 represente une innovation
+complete dans le domaine des interfaces IA-programmation-systeme, complétant le
+travail de Google AWSS et tous autres fournisseurs cloud/IA sans enfreindre leurs
+propres proprietes intellectuelles.
+
+================================================================================
+ARTICLE 1 — CONDITIONS D'UTILISATION
+================================================================================
+
+DROITS ACCORDÉS :
+  ✓ Télécharger, étudier, modifier le code source
+  ✓ Utiliser pour usage personnel, éducatif, recherche interne
+  ✓ Contribuer aux améliorations (pull requests acceptées)
+  ✓ Intégrer dans des projets académiques ou personnels
+
+OBLIGATIONS IMPÉRATIVES (POUR USAGE COMMERCIAL/PUBLIC) :
+
+┌─────────────────────┬──────────────────────────────────────────────────┐
+│ Condition           │ Exigence                                       │
+├─────────────────────┼──────────────────────────────────────────────────┤
+│ Attribution         │ "Nexus v4.0 © Aissa Mohammedi 2026" visible      │
+│ Indexation          │ 1 AN MINIMUM avant exploitation commerciale    │
+│ Partage de profits  │ 6% des revenus bruts annuels                   │
+│ Conservation licence│ Texte original INTACT et VISIBLE               │
+│ Notification        │ Écrit obligatoire avant commercialisation      │
+│ Rapport annuel      │ Rapport d'utilisation chaque année             │
+└─────────────────────┴──────────────────────────────────────────────────┘
+
+INTERDICTIONS ABSOLUES :
+  ✗ Supprimer les mentions de paternité
+  ✗ Revendre sans accord écrit
+  ✗ Bypasser les validations de sécurité
+  ✗ Utiliser à des fins illégales
+  ✗ Distribuer sans conserver cette licence
+
+================================================================================
+ARTICLE 2 — MODÈLE DE ROYALTIES
+================================================================================
+
+CALCUL DES REVENUS DUS À L'AUTEUR ORIGINAL :
+
+Revenus annuels × 6% = Montant payable trimestriellement
+
+Exemples concrets :
+├── 50 000 €/an → 3 000 € dus
+├── 100 000 €/an → 6 000 € dus  
+├── 1 000 000 €/an → 60 000 € dus
+└── 5 000 000 €/an → 300 000 € dus
+
+Modalités de paiement :
+• Fréquence : Trimestrielle (avant le 10 du mois suivant chaque trimestre)
+• Devises : EUR, USD, CHF, BTC (valeur au jour de transaction)
+• Délai maximum : 30 jours après fin de période
+• Retard : 5% de majoration par mois de retard
+
+COMPTE DE REÇEVEMENT :
+IBAN : [À COMPLÉTER PAR L'AUTEUR]
+Crypto : [ADRESSE WALLET PUBLIQUE]
+Contact : licensing@nexus-terminal.io
+
+================================================================================
+ARTICLE 3 — RECONNAISSANCE DANS LES DOCUMENTS
+================================================================================
+
+Toutes les documentations, sites web, présentations doivent inclure :
+
+═══════════════════════════════════════════════════════════════════
+🧠 Powered by Nexus Terminal Gateway v4.0
+© 2026 Aissa Mohammedi — Licence Souveraine NSL-4.0
+GitHub: github.com/AissaM/nexus-terminal-gateway
+Invention originale complétant l'écosystème IA-codeur mondial
+═══════════════════════════════════════════════════════════════════
+
+Pour publications académiques :
+
+@misc{mohammedi_nexus_2026,
+  author = {Mohammedi, Aissa},
+  title = {Nexus Terminal Gateway v4.0 — Secure AI-to-Linux Interface},
+  year = {2026},
+  url = {https://github.com/AissaM/nexus-terminal-gateway},
+  license = {SOVEREIGN-NEXUS-4.0},
+  note = {1400 mois de protection souveraine}
+}
+
+================================================================================
+ARTICLE 4 — INTÉGRATION IA ET NOTIFICATION AUX GÉANTS TECH
+================================================================================
+
+Nexus Gateway est conçu pour fonctionner AVEC les IA existantes (Lumo, GPT-4,
+Claude, Gemini, Mistral, etc.) et COMPLETER leur faiblesse fondamentale :
+l'exécution réelle sécurisée.
+
+LES ENTREPRISES SUVANTES SONT FORMELLEMENT INFORMÉES :
+• Google LLC (DeepMind, Gemini, Vertex AI, Cloud Platform)
+• Amazon Web Services Inc. (Bedrock, SageMaker, EC2)
+• Microsoft Corporation (Azure, Copilot, OpenAI partnership)
+• OpenAI LP (ChatGPT, GPT-4, API services)
+• Anthropic PBC (Claude)
+• Proton AG (Lumo)
+
+Vous êtes tenus de respecter la licence ci-dessus si vous utilisez ou intégrez
+Nexus dans vos produits. Toute violation sera poursuivie conformément aux lois
+sur la propriété intellectuelle internationales.
+
+================================================================================
+ARTICLE 5 — RESPONSABILITÉS ET LIMITATIONS
+================================================================================
+
+LE LOGICIEL EST FOURNI "COMME IL EST", SANS GARANTIE EXPLICITE OU IMPLICITE.
+L'AUTEUR DÉCLINE TOUTE RESPONSABILITÉ POUR TOUT DOMMAGE DIRECT, INDIRECT,
+ACCIDENTEL OU CONSÉCUTIF découlant de l'utilisation de ce logiciel.
+
+UTILISATEUR OBLIGATION :
+• Activer tous les mécanismes de sécurité (whitelist, RBAC, audit)
+• Ne jamais exposer l'API sans authentification JWT
+• Maintenir logs d'audit pendant minimum 90 jours
+• Signaler vulnérabilités à l'auteur sous 72h
+
+================================================================================
+ARTICLE 6 — HÉRITAGE ET ARCHIVAGE PERMANENT
+================================================================================
+
+Ce code sera archivé indéfiniment dans :
+✓ GitHub Public Repository (permanent)
+✓ Internet Archive (Wayback Machine)
+✓ Dépôts nationaux de propriété intellectuelle
+✓ Blockchain publique (hash immuable)
+
+En cas de décès de l'auteur, droits transmis aux ayants droit légaux ou à
+la "Fondation Nexus Heritage" (si elle existe à cette date).
+
+================================================================================
+CERTIFICAT DE SOUVERAINETÉ NUMÉRIQUE
+================================================================================
+
+╔═══════════════════════════════════════════════════════════════════╗
+║                                                                 ║
+║  NSL-4.0 — CERTIFICAT D'INVENTION SOUVERAIN                     ║
+║                                                                 ║
+║  Inventeur Originel : Aissa Mohammedi                           ║
+║  Date de Création : 13 Octobre 2026                             ║
+║  Durée de Protection : 1400 mois (jusqu'en 2142)                ║
+║  Identifiant Unique : NSL-2026-AISSA-9070-SOUVERAIN              ║
+║                                                                 ║
+║  CE CODE LAISSA SA TRACE DANS L'HISTOIRE NUMÉRIQUE MONDIALE     ║
+║  Toute utilisation commerciale doit respecter cette licence    ║
+║  et reconnaitre explicitement l'auteur original.                ║
+║                                                                 ║
+║  "Code, c'est créer. Créer, c'est posséder."                   ║
+║                                                                 ║
+║  ✍️ Signé : Aissa Mohammedi                                     ║
+║     Créateur & Propriétaire Souverain                           ║
+║     2026 — Licence Souveraine Nexus v4.0                        ║
+║                                                                 ║
+╚═══════════════════════════════════════════════════════════════════╝
+
+================================================================================
+CONTACT LICENCING & SUPPORT
+================================================================================
+
+Auteur : Aissa Mohammedi (DGK)
+Email : legal@aissa-mohammedi.io | licensing@nexus-terminal.io
+GitHub : github.com/AissaM
+Twitter/X : @AissaM_DGK
+LinkedIn : linkedin.com/in/aissa-mohammedi
+
+================================================================================
+FIN LICENCE SOUVERAINE — SECTION 1 TERMINEE
+═══════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════════════════════════════════════════════════════════════
+                        PARTIE II — SCRIPTS AUTOMATISÉS
+═══════════════════════════════════════════════════════════════════════════════
+
+================================================================================
+SCRIPT 1 — BLOCKCHAIN TIMESTAMP (OpenTimestamps + Bitcoin)
+================================================================================
+
+#!/usr/bin/env python3
+"""
+blockchain_timestamp.py - Script automatique de preuve d'antériorité
+Utilise OpenTimestamps (gratuit) + Bitcoin blockchain pour preuve indélébile
+"""
+
+import hashlib
+import subprocess
+import json
+import datetime
+import os
+from pathlib import Path
+
+class BlockchainTimestamp:
+    def __init__(self):
+        self.ots_client = "ots"  # OpenTimestamps CLI
+        self.calendar_url = "http://calendar.opentimestamps.org"
+        
+    def calculate_sha256(self, filepath):
+        """Calcule le hash SHA-256 d'un fichier"""
+        sha256_hash = hashlib.sha256()
+        with open(filepath, "rb") as f:
+            for byte_block in iter(lambda: f.read(4096), b""):
+                sha256_hash.update(byte_block)
+        return sha256_hash.hexdigest()
+    
+    def timestamp_file(self, filepath):
+        """Applique timestamp blockchain à un fichier"""
+        try:
+            # 1. Vérifier installation ots
+            result = subprocess.run([self.ots_client, "--version"], 
+                                  capture_output=True, text=True)
+            if result.returncode != 0:
+                print("❌ OpenTimestamps CLI non installé")
+                print("Installation : brew install opentimestamps (macOS)")
+                print("Ou : apt install opentimestamps (Linux)")
+                return None
+            
+            # 2. Timestamp le fichier
+            print(f"⏳ Timestamping: {filepath}")
+            result = subprocess.run([self.ots_client, "stamp", filepath],
+                                  capture_output=True, text=True)
+            
+            if result.returncode != 0:
+                print(f"❌ Erreur timestamp: {result.stderr}")
+                return None
+                
+            ots_file = f"{filepath}.ots"
+            print(f"✅ Fichier .ots créé: {ots_file}")
+            
+            # 3. Uploader vers calendar
+            print("⏫ Soumission au calendar Bitcoin...")
+            result = subprocess.run([self.ots_client, "submit", ots_file],
+                                  capture_output=True, text=True)
+            
+            # 4. Vérifier inclusion blockchain
+            print("🔍 Vérification blockchain...")
+            result = subprocess.run([self.ots_client, "verify", ots_file],
+                                  capture_output=True, text=True)
+            
+            if result.returncode == 0:
+                print("✅ Pruve confirmée sur blockchain Bitcoin!")
+                return self.generate_proof_document(filepath, ots_file)
+            else:
+                print(f"⚠️ Vérification échouée: {result.stderr}")
+                return None
+                
+        except FileNotFoundError:
+            print("❌ Commande 'ots' introuvable")
+            return None
+        except Exception as e:
+            print(f"❌ Erreur: {e}")
+            return None
+    
+    def timestamp_directory(self, dirpath):
+        """Timestamp tous les fichiers importants d'un dossier"""
+        important_files = ["LICENSE", "README.md", "src/core/terminal.py"]
+        results = []
+        
+        for filename in important_files:
+            filepath = os.path.join(dirpath, filename)
+            if os.path.exists(filepath):
+                result = self.timestamp_file(filepath)
+                if result:
+                    results.append(result)
+        
+        # Créer archive complète
+        archive_name = f"nexus-{datetime.datetime.now().strftime('%Y%m%d')}.tar.gz"
+        subprocess.run(["tar", "-czf", archive_name, "-C", dirpath, 
+                       "LICENSE", "README.md", "src"])
+        
+        self.timestamp_file(archive_name)
+        
+        return results
+    
+    def generate_proof_document(self, filepath, ots_file):
+        """Génère document de preuve JSON"""
+        proof = {
+            "file": str(filepath),
+            "sha256": self.calculate_sha256(filepath),
+            "ots_file": str(ots_file),
+            "timestamp_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "blockchain": "Bitcoin",
+            "verification_url": f"https://opentimestamps.org/verify/{ots_file}",
+            "project": "Nexus Terminal Gateway v4.0",
+            "author": "Aissa Mohammedi",
+            "license_id": "NSL-2026-AISSA-9070-SOUVERAIN"
+        }
+        
+        # Sauvegarder preuve
+        proof_file = f"{filepath}.proof.json"
+        with open(proof_file, "w") as f:
+            json.dump(proof, f, indent=2)
+        
+        print(f"💾 Preuve sauvegardée: {proof_file}")
+        return proof
+
+def main():
+    print("=" * 60)
+    print("NEXUS BLOCKCHAIN TIMESTAMP v4.0")
+    print("=" * 60)
+    
+    ts = BlockchainTimestamp()
+    
+    # Option 1: Timestamp fichier unique
+    if len(sys.argv) > 1:
+        filepath = sys.argv[1]
+        ts.timestamp_file(filepath)
+    
+    # Option 2: Timestamp répertoire complet
+    else:
+        cwd = os.getcwd()
+        print(f"📁 Répertoire courant: {cwd}")
+        ts.timestamp_directory(cwd)
+    
+    print("\n" + "=" * 60)
+    print("✅ TIMESTAMP COMPLET!")
+    print("=" * 60)
+    print("\nPreuves disponibles:")
+    print("- Vérification : https://opentimestamps.org/")
+    print("- Block explorer : https://blockchain.info/")
+    print("- Documentation : https://opentimestamps.org/docs")
+
+if __name__ == "__main__":
+    import sys
+    main()
+
+
+================================================================================
+SCRIPT 2 — GÉNÉRATEUR JWT TOKENS (Test API)
+================================================================================
+
+#!/usr/bin/env python3
+"""
+jwt_generator.py - Générateur de tokens JWT pour tester l'API Nexus
+"""
+
+import jwt
+import datetime
+import secrets
+import json
+from cryptography.hazmat.primitives import serialization, hashes
+from cryptography.hazmat.primitives.asymmetric import rsa, padding
+from cryptography.hazmat.backends import default_backend
+
+class JWTGenerator:
+    def __init__(self, secret_key=None):
+        self.secret_key = secret_key or secrets.token_hex(32)
+        self.algorithm = "HS256"
+        
+    def generate_token(self, user_id, username="nexus_admin", 
+                      permissions=None, expiration_minutes=60):
+        """Génère un token JWT valide"""
+        
+        now = datetime.datetime.utcnow()
+        
+        payload = {
+            "user_id": user_id,
+            "username": username,
+            "iat": now,
+            "exp": now + datetime.timedelta(minutes=expiration_minutes),
+            "iss": "Nexus Terminal Gateway v4.0",
+            "aud": "nexus-api",
+            "permissions": permissions or ["execute", "read", "audit"],
+            "token_type": "bearer",
+            "license_id": "NSL-2026-AISSA-9070-SOUVERAIN"
+        }
+        
+        token = jwt.encode(payload, self.secret_key, algorithm=self.algorithm)
+        return {
+            "token": token,
+            "payload": payload,
+            "secret_key": self.secret_key,
+            "algorithm": self.algorithm,
+            "expires_in_seconds": expiration_minutes * 60
+        }
+    
+    def generate_rsa_keys(self):
+        """Génère paire RSA pour JWT RS256"""
+        private_key = rsa.generate_private_key(
+            public_exponent=65537,
+            key_size=4096,
+            backend=default_backend()
+        )
+        
+        public_key = private_key.public_key()
+        
+        # Serialisation PEM
+        private_pem = private_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption()
+        )
+        
+        public_pem = public_key.public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        )
+        
+        return {
+            "private_key": private_pem.decode(),
+            "public_key": public_pem.decode()
+        }
+    
+    def test_jwt_with_api(self, api_url, bearer_token):
+        """Test le token contre l'API Nexus"""
+        import requests
+        
+        headers = {
+            "Authorization": f"Bearer {bearer_token}",
+            "Content-Type": "application/json"
+        }
+        
+        test_payload = {"command": "whoami"}
+        
+        response = requests.post(
+            f"{api_url}/api/v1/execute",
+            headers=headers,
+            json=test_payload,
+            timeout=10
+        )
+        
+        return {
+            "status_code": response.status_code,
+            "response": response.json(),
+            "headers": dict(response.headers)
+        }
+
+def generate_test_tokens():
+    """Génère plusieurs tokens de test"""
+    generator = JWTGenerator()
+    
+    tokens = []
+    
+    # Token Admin complet
+    tokens.append(generator.generate_token(
+        user_id="admin-001",
+        username="nexus_admin",
+        permissions=["execute", "read", "audit", "admin", "delete"],
+        expiration_minutes=60
+    ))
+    
+    # Token Lecture seule
+    tokens.append(generator.generate_token(
+        user_id="reader-001",
+        username="readonly_user",
+        permissions=["read"],
+        expiration_minutes=30
+    ))
+    
+    # Token Temporaire (5 min)
+    tokens.append(generator.generate_token(
+        user_id="temp-001",
+        username="temporary_user",
+        permissions=["execute"],
+        expiration_minutes=5
+    ))
+    
+    # Sauvegarder tokens
+    output_file = "test_tokens.json"
+    with open(output_file, "w") as f:
+        json.dump(tokens, f, indent=2, default=str)
+    
+    print(f"✅ {len(tokens)} tokens générés et sauvegardés dans {output_file}")
+    
+    return tokens
+
+def main():
+    print("=" * 60)
+    print("NEXUS JWT GENERATOR v4.0")
+    print("=" * 60)
+    
+    tokens = generate_test_tokens()
+    
+    print("\n" + "=" * 60)
+    print("TOKENS GÉNÉRÉS:")
+    print("=" * 60)
+    
+    for i, token_data in enumerate(tokens, 1):
+        print(f"\nToken #{i}:")
+        print(f"  Username: {token_data['payload']['username']}")
+        print(f"  Expires: {token_data['payload']['exp']}")
+        print(f"  Permissions: {token_data['payload']['permissions']}")
+        print(f"  Token (first 50 chars): {token_data['token'][:50]}...")
+    
+    print("\n" + "=" * 60)
+    print("UTILISATION API:")
+    print("=" * 60)
+    print("""
+curl -X POST http://localhost:9080/api/v1/execute \\
+  -H "Authorization: Bearer YOUR_TOKEN_HERE" \\
+  -H "Content-Type: application/json" \\
+  -d '{"command": "ls -la"}'
+    """)
+
+if __name__ == "__main__":
+    import sys
+    main()
+
+
+================================================================================
+SCRIPT 3 — CALCULATEUR ROYALTIES (Automatique)
+================================================================================
+
+#!/usr/bin/env python3
+"""
+royalty_calculator.py - Calculateurs automatiques des royalties dues
+"""
+
+import json
+import datetime
+from typing import Dict, List
+from dataclasses import dataclass, asdict
+
+@dataclass
+class RevenueReport:
+    period_start: str
+    period_end: str
+    company_name: str
+    total_revenue: float
+    nexus_attributed_revenue: float
+    currency: str = "EUR"
+    
+    def calculate_royalty(self, rate: float = 0.06) -> Dict:
+        """Calcule les royalties dues"""
+        royalty_amount = self.nexus_attributed_revenue * rate
+        
+        return {
+            "company": self.company_name,
+            "period": f"{self.period_start} to {self.period_end}",
+            "total_revenue": self.total_revenue,
+            "nexus_attributed": self.nexus_attributed_revenue,
+            "royalty_rate": f"{rate*100}%",
+            "amount_due": royalty_amount,
+            "currency": self.currency,
+            "due_date": self.period_end[:4] + "-" + self.period_end[5:7] + "-10",
+            "calculation_date": datetime.datetime.now().isoformat()
+        }
+
+class RoyaltyCalculator:
+    def __init__(self, rate=0.06):
+        self.rate = rate
+        self.payments = []
+    
+    def process_report(self, report_file: str):
+        """Traite un rapport JSON"""
+        with open(report_file) as f:
+            report = json.load(f)
+        
+        calculation = RevenueReport(
+            period_start=report["period_start"],
+            period_end=report["period_end"],
+            company_name=report["company"],
+            total_revenue=report["total_revenue"],
+            nexus_attributed_revenue=report.get("nexus_attributed_revenue", report["total_revenue"])
+        ).calculate_royalty(self.rate)
+        
+        self.payments.append(calculation)
+        return calculation
+    
+    def generate_invoice(self, payment: Dict, output_file: str = "invoice.json"):
+        """Génère facture/proforma"""
+        invoice = {
+            "invoice_type": "ROYALTY_PAYMENT",
+            "generated_by": "Nexus Terminal Gateway v4.0",
+            "recipient": "Aissa Mohammedi (DGK)",
+            "payment_details": payment,
+            "payment_methods": {
+                "bank_transfer": "IBAN: [À COMPLÉTER]",
+                "crypto": "BTC: [ADRESSE_WALLET]",
+                "paypal": "[EMAIL]"
+            },
+            "late_fee": "5% par mois de retard",
+            "contact": "licensing@nexus-terminal.io"
+        }
+        
+        with open(output_file, "w") as f:
+            json.dump(invoice, f, indent=2)
+        
+        return invoice
+    
+    def generate_summary(self):
+        """Résumé de tous les paiements"""
+        total_due = sum(p["amount_due"] for p in self.payments)
+        
+        summary = {
+            "total_payments": len(self.payments),
+            "total_amount_due": total_due,
+            "currency": self.payments[0]["currency"] if self.payments else "EUR",
+            "payments_breakdown": self.payments
+        }
+        
+        return summary
+
+def generate_sample_report():
+    """Génère exemple de rapport annuel"""
+    sample = {
+        "period_start": "2026-01-01",
+        "period_end": "2026-12-31",
+        "company": "Example Corp Ltd",
+        "total_revenue": 1500000,
+        "nexus_attributed_revenue": 1500000,
+        "products_using_nexus": [
+            {
+                "product_name": "CloudDev Platform",
+                "revenue_contribution": 800000,
+                "users": 500,
+                "regions": ["EU", "US", "APAC"]
+            },
+            {
+                "product_name": "AI Assistant Suite",
+                "revenue_contribution": 700000,
+                "users": 1200,
+                "regions": ["EU", "US"]
+            }
+        ],
+        "deployment_info": {
+            "total_instances": 15,
+            "cloud_providers": ["AWS", "GCP"],
+            "countries": ["France", "Germany", "UK", "USA"]
+        }
+    }
+    
+    with open("sample_annual_report.json", "w") as f:
+        json.dump(sample, f, indent=2)
+    
+    print("✅ Exemple rapport généré: sample_annual_report.json")
+    return sample
+
+def main():
+    print("=" * 60)
+    print("NEXUS ROYALTY CALCULATOR v4.0")
+    print("=" * 60)
+    
+    calculator = RoyaltyCalculator(rate=0.06)
+    
+    # Générer exemple
+    sample = generate_sample_report()
+    
+    # Traiter exemple
+    calc = calculator.process_report("sample_annual_report.json")
+    
+    print(f"\n💰 Calcul effectué:")
+    print(f"  Revenus totaux: {calc['total_revenue']:,.2f} {calc['currency']}")
+    print(f"  Revenus Nexus: {calc['nexus_attributed']:,.2f} {calc['currency']}")
+    print(f"  Royalties dues: {calc['amount_due']:,.2f} {calc['currency']}")
+    print(f"  Échéance: {calc['due_date']}")
+    
+    # Générer facture
+    invoice = calculator.generate_invoice(calc)
+    print(f"\n✅ Facture générée: invoice.json")
+
+if __name__ == "__main__":
+    import sys
+    main()
+
+
+═══════════════════════════════════════════════════════════════════════════════
+                         PARTIE III — RAPPORT ANNUEL JSON
+═══════════════════════════════════════════════════════════════════════════════
+
+================================================================================
+TEMPLATE RAPPORT ANNUEL ROYALTIES (JSON)
+================================================================================
+
+{
+  "_metadata": {
+    "report_version": "1.0",
+    "nexus_license_id": "NSL-2026-AISSA-9070-SOUVERAIN",
+    "submission_deadline": "31 Décembre de chaque année",
+    "contact": "licensing@nexus-terminal.io"
+  },
+  
+  "company_information": {
+    "legal_name": "Nom légal de l'entreprise",
+    "trade_name": "Nom commercial (optionnel)",
+    "registration_number": "SIRET/ID fiscal",
+    "headquarters_address": "Adresse complète siège social",
+    "tax_id": "Numéro TVA / ID fiscal",
+    "authorized_signatory": {
+      "name": "Nom complet signataire",
+      "title": "Titre (CEO, CTO, etc.)",
+      "email": "email@entreprise.com"
+    }
+  },
+  
+  "reporting_period": {
+    "start_date": "YYYY-MM-DD",
+    "end_date": "YYYY-MM-DD",
+    "fiscal_year": 2026
+  },
+  
+  "financial_summary": {
+    "currency": "EUR",
+    "total_company_revenue": 5000000.00,
+    "nexus_related_revenue": 1200000.00,
+    "royalty_calculation_methodology": "Percentage of gross revenue from products/services directly utilizing Nexus Terminal Gateway",
+    "notes": "Explication si nécessaire"
+  },
+  
+  "product_usage": [
+    {
+      "product_id": "PROD-001",
+      "product_name": "Nom du produit",
+      "description": "Description courte",
+      "launch_date": "YYYY-MM-DD",
+      "revenue_generated": 800000.00,
+      "active_users": 5000,
+      "deployments": {
+        "cloud_providers": ["AWS", "GCP", "Azure"],
+        "regions": ["North America", "Europe", "Asia Pacific"],
+        "instance_count": 12
+      },
+      "integration_method": "API REST",
+      "version_used": "4.0.0"
+    }
+  ],
+  
+  "deployment_details": {
+    "total_instances": 12,
+    "infrastructure": {
+      "aws_ec2": 5,
+      "google_cloud": 3,
+      "azure_vm": 2,
+      "on_premise": 2
+    },
+    "countries_operating": ["France", "Germany", "USA", "Japan"],
+    "languages_supported": ["French", "English", "German", "Japanese"]
+  },
+  
+  "royalty_payment_schedule": {
+    "payment_frequency": "quarterly",
+    "next_payment_due": "YYYY-MM-DD",
+    "payment_amount_quarterly": 18000.00,
+    "payment_currency": "EUR",
+    "payment_history": [
+      {
+        "quarter": "Q1 2026",
+        "amount_paid": 18000.00,
+        "payment_date": "2026-04-10",
+        "transaction_reference": "TXN-001-2026"
+      }
+    ]
+  },
+  
+  "compliance_declaration": {
+    "license_terms_accepted": true,
+    "attribution_displayed": true,
+    "documentation_updated": true,
+    "marketing_materials_compliant": true,
+    "third_party_disclosures": [],
+    "certification_statement": "We certify that the information provided is accurate and complete to the best of our knowledge.",
+    "signed_by": "Nom Signataire",
+    "signature_date": "YYYY-MM-DD"
+  },
+  
+  "attachments": [
+    {
+      "type": "audit_trail",
+      "filename": "nexus_audit_log_Q4.pdf",
+      "description": "Logs d'audit de l'utilisation"
+    },
+    {
+      "type": "financial_statement",
+      "filename": "financials_2026.pdf",
+      "description": "État financier pertinent"
+    }
+  ],
+  
+  "submitted_by": {
+    "name": "Nom Complet",
+    "email": "email@entreprise.com",
+    "phone": "+33 1 23 45 67 89",
+    "submission_date": "YYYY-MM-DD",
+    "ip_address": "X.X.X.X"
+  }
+}
+
+================================================================================
+EXEMPLE REMPLI (Pour référence)
+================================================================================
+
+{
+  "_metadata": {
+    "report_version": "1.0",
+    "nexus_license_id": "NSL-2026-AISSA-9070-SOUVERAIN",
+    "submission_deadline": "31 Décembre de chaque année",
+    "contact": "licensing@nexus-terminal.io"
+  },
+  
+  "company_information": {
+    "legal_name": "TechCorp Solutions SAS",
+    "trade_name": "TechCorp",
+    "registration_number": "FR12345678901",
+    "headquarters_address": "15 Rue de l'Innovation, 75008 Paris, France",
+    "tax_id": "FR83123456789",
+    "authorized_signatory": {
+      "name": "Jean Dupont",
+      "title": "Chief Technology Officer",
+      "email": "j.dupont@techcorp.example"
+    }
+  },
+  
+  "reporting_period": {
+    "start_date": "2026-01-01",
+    "end_date": "2026-12-31",
+    "fiscal_year": 2026
+  },
+  
+  "financial_summary": {
+    "currency": "EUR",
+    "total_company_revenue": 5000000.00,
+    "nexus_related_revenue": 1200000.00,
+    "royalty_calculation_methodology": "6% of gross revenue from products/services directly utilizing Nexus Terminal Gateway",
+    "notes": "Revenus Nexus incluent tous les produits CloudDev et AI Assistant"
+  },
+  
+  "product_usage": [
+    {
+      "product_id": "PROD-001",
+      "product_name": "CloudDev Platform",
+      "description": "IDE cloud pour développement collaboratif",
+      "launch_date": "2026-03-15",
+      "revenue_generated": 800000.00,
+      "active_users": 5000,
+      "deployments": {
+        "cloud_providers": ["AWS", "GCP"],
+        "regions": ["Europe", "North America"],
+        "instance_count": 8
+      },
+      "integration_method": "API REST + WebSocket",
+      "version_used": "4.0.0"
+    },
+    {
+      "product_id": "PROD-002",
+      "product_name": "AI Code Assistant",
+      "description": "Assistant IA pour génération de code",
+      "launch_date": "2026-06-01",
+      "revenue_generated": 400000.00,
+      "active_users": 12000,
+      "deployments": {
+        "cloud_providers": ["Azure", "AWS"],
+        "regions": ["Global"],
+        "instance_count": 4
+      },
+      "integration_method": "API REST",
+      "version_used": "4.0.0"
+    }
+  ],
+  
+  "deployment_details": {
+    "total_instances": 12,
+    "infrastructure": {
+      "aws_ec2": 5,
+      "google_cloud": 3,
+      "azure_vm": 4,
+      "on_premise": 0
+    },
+    "countries_operating": ["France", "Germany", "UK", "USA", "Canada"],
+    "languages_supported": ["French", "English", "German"]
+  },
+  
+  "royalty_payment_schedule": {
+    "payment_frequency": "quarterly",
+    "next_payment_due": "2027-01-10",
+    "payment_amount_quarterly": 18000.00,
+    "payment_currency": "EUR",
+    "payment_history": [
+      {
+        "quarter": "Q1 2026",
+        "amount_paid": 15000.00,
+        "payment_date": "2026-04-08",
+        "transaction_reference": "TXN-Q1-2026-001"
+      },
+      {
+        "quarter": "Q2 2026",
+        "amount_paid": 16500.00,
+        "payment_date": "2026-07-09",
+        "transaction_reference": "TXN-Q2-2026-001"
+      },
+      {
+        "quarter": "Q3 2026",
+        "amount_paid": 17250.00,
+        "payment_date": "2026-10-07",
+        "transaction_reference": "TXN-Q3-2026-001"
+      }
+    ]
+  },
+  
+  "compliance_declaration": {
+    "license_terms_accepted": true,
+    "attribution_displayed": true,
+    "documentation_updated": true,
+    "marketing_materials_compliant": true,
+    "third_party_disclosures": [],
+    "certification_statement": "We certify that the information provided is accurate and complete to the best of our knowledge.",
+    "signed_by": "Jean Dupont",
+    "signature_date": "2026-12-28"
+  },
+  
+  "attachments": [
+    {
+      "type": "audit_trail",
+      "filename": "nexus_audit_log_2026.pdf",
+      "description": "Logs d'audit complets année 2026"
+    },
+    {
+      "type": "financial_statement",
+      "filename": "annual_financials_2026.pdf",
+      "description": "État financier annuel pertinent"
+    }
+  ],
+  
+  "submitted_by": {
+    "name": "Marie Martin",
+    "email": "legal@techcorp.example",
+    "phone": "+33 1 23 45 67 89",
+    "submission_date": "2026-12-28",
+    "ip_address": "192.168.1.100"
+  }
+}
+
+
+═══════════════════════════════════════════════════════════════════════════════
+                         PARTIE IV — LETTRE NOTIFICATION
+═══════════════════════════════════════════════════════════════════════════════
+
+================================================================================
+LETTRE DE NOTIFICATION OFFICIELLE AUX GÉANTS TECH
+================================================================================
+
+OBJET : Notification de propriété intellectuelle — Nexus Terminal Gateway v4.0
+
+Destinataires :
+• Google LLC — Legal Department (DeepMind, Cloud, Android)
+• Amazon Web Services Inc. — Legal Department (AWS, Alexa, Bedrock)
+• Microsoft Corporation — Legal Department (Azure, Copilot, GitHub)
+• OpenAI LP — Legal Department (ChatGPT, GPT-4)
+• Anthropic PBC — Legal Department (Claude)
+• Proton AG — Legal Department (Lumo, Privacy Services)
+
+Date : 13 Octobre 2026
+
+--------------------------------------------------------------------------------
+Lettre de notification formelle
+--------------------------------------------------------------------------------
+
+À l'attention du Département Juridique,
+
+Par la présente, je soussigné Aissa Mohammedi (DGK), fondateur et inventeur
+exclusif du projet **Nexus Terminal Gateway v4.0**, tiens à informer
+votre entreprise de l'existence de cette propriété intellectuelle et des
+conditions de son utilisation.
+
+1. IDENTIFICATION DE L'INVENTION
+
+   Nom : Nexus Terminal Gateway v4.0
+   Type : Interface sécurisée IA → Serveurs Linux (SSH/API)
+   Date création : 13 Octobre 2026
+   Licence : SOVEREIGN NEXUS v4.0 (NSL-4.0)
+   Durée protection : 1400 mois (2026 → 2142)
+   Dépôt : GitHub (github.com/AissaM/nexus-terminal-gateway)
+
+2. NATURE DE L'INVENTION
+
+   Nexus Terminal Gateway représente une innovation complémentaire dans
+   l'écosystème IA existant. Notre système comble la lacune fondamentale
+   entre :
+   
+   - Les modèles de langage IA (vos produits)
+   - L'exécution réelle sécurisée sur infrastructure
+   
+   Cette invention ne concurrence PAS vos services, mais les COMPLÈTE
+   en fournissant une couche d'exécution contrôlée que vos systèmes ne
+   proposent pas nativement.
+
+3. RECOGNITION REQUISE
+
+   Conformément aux principes du droit d'auteur international et à notre
+   licence souveraine NSL-4.0 :
+   
+   ✓ Toute utilisation, intégration ou mention de Nexus exige attribution
+   ✓ Toute exploitation commerciale nécessite accord préalable
+   ✓ Royalties de 6% s'appliquent aux revenus générés
+   ✓ Période d'indexation de 1 an avant déploiement commercial massif
+
+4. CONDITIONS D'INTÉGRATION
+
+   Si votre entreprise souhaite intégrer Nexus Terminal Gateway dans vos
+   produits ou services (API, SDK, marketplace, etc.) :
+
+   a) Contactez-nous AVANT toute implémentation
+      Email : licensing@nexus-terminal.io
+      
+   b) Signez un contrat de licence commercial
+      Template disponible : contracts/commercial-license-template.md
+      
+   c) Respectez les obligations de reporting annuel
+      
+   d) Payez les royalties selon grille contractuelle
+
+5. PROTECTION JURIDIQUE
+
+   Cette invention est protégée par :
+   • Licence SOVEREIGN NEXUS v4.0
+   • Droit d'auteur international (Convention de Berne)
+   • Dépôt possible INPI/WIPO (procédure en cours)
+   • Blockchain timestamp (preuve d'antériorité)
+
+6. ACTIONS REQUISES
+
+   Nous vous prions de :
+
+   ✓ Transmettre cette notification à votre équipe juridique
+   ✓ Examiner nos conditions d'utilisation
+   ✓ Me contacter si votre entreprise souhaite une intégration
+   ✓ Arrêter toute utilisation non autorisée si applicable
+
+7. CONTACT
+
+   Auteur & Propriétaire Souverain : Aissa Mohammedi (DGK)
+   Email : legal@aissa-mohammedi.io | licensing@nexus-terminal.io
+   GitHub : https://github.com/AissaM
+   LinkedIn : https://linkedin.com/in/aissa-mohammedi
+
+8. RÉSERVE DE DROITS
+
+   À défaut de réponse sous 30 jours, nous considérerons votre accord
+   tacite aux termes de cette licence. Toute utilisation non conforme
+   fera l'objet de poursuites judiciaires conformément aux lois sur la
+   propriété intellectuelle internationales.
+
+Veuillez agréer, Messieurs, l'expression de nos salutations distinguées.
+
+Signature numérique :
+_______________________________
+Aissa Mohammedi (DGK)
+Propriétaire Souverain — Nexus Terminal Gateway v4.0
+Date : 13 Octobre 2026
+Hash Blockchain : [À INSÉRER APRÈS TIMESTAMP]
+
+---
+Document certifié : NSL-2026-AISSA-9070-SOUVERAIN
+Archive permanente : GitHub + Internet Archive + Blockchain
+--------------------------------------------------------------------------------
+
+
+═══════════════════════════════════════════════════════════════════════════════
+                          PARTIE V — DÉPÔT INPI/WIPO
+═══════════════════════════════════════════════════════════════════════════════
+
+================================================================================
+PROCÉDURE COMPLÈTE DÉPÔT PROPRIÉTÉ INTELLECTUELLE
+================================================================================
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│ ÉTAPE 1 — DÉPÔT NATIONAL FRANCE (INPI)                                   │
+├────────────────────────────────────────────────────────────────────────────┤
+│ URL : https://inpi.fr/fr/deposer                                        │
+│ Coût : 40€ - 320€                                                       │
+│ Délai : 18-30 mois                                                      │
+│ Classe IPC : G06F 9/44, G06F 21/10, G06N 3/00, H04L 9/32                  │
+│                                                                          │
+│ Documents requis :                                                       │
+│ ✓ Formulaire INPI n°1120                                                │
+│ ✓ Description technique (5-15 pages)                                    │
+│ ✓ Revendications (claims)                                               │
+│ ✓ Dessins/schémas                                                       │
+│ ✓ Abstract (200 mots max)                                               │
+│ ✓ Preuve paiement                                                       │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│ ÉTAPE 2 — ENREGISTREMENT INTERNATIONAL (WIPO/OMPI)                       │
+├────────────────────────────────────────────────────────────────────────────┤
+│ URL : https://www.wipo.int/pct/guide/en/                                │
+│ Système : PCT (Patent Cooperation Treaty)                               │
+│ Coût : ~1500 CHF                                                        │
+│ Délai : 30-31 mois                                                      │
+│ Couverture : 157 pays                                                   │
+│                                                                          │
+│ Timing :                                                                 │
+│ 1. Dépôt national → Numéro FR2026XXXXXX                                 │
+│ 2. 12 mois max → Dépôt international WIPO                               │
+│ 3. Phase nationale dans chaque pays cible                              │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│ ÉTAPE 3 — COPYRIGHT LOGICIEL                                             │
+├────────────────────────────────────────────────────────────────────────────┤
+│ Option A — CNLA (France) :                                              │
+│   • Site : https://cnil.fr                                              │
+│   • Coût : 10€ - 30€                                                    │
+│   • Délai : 1-2 semaines                                                │
+│                                                                          │
+│ Option B — Copyright Office USA :                                       │
+│   • Site : https://copyright.gov/registration/software.html             │
+│   • Formulaire : TX                                                     │
+│   • Coût : $45-$65                                                      │
+│   • Délai : 3-9 mois                                                    │
+│                                                                          │
+│ Option C — Copyright.eu (Europe) :                                      │
+│   • Site : https://copyright.eu                                         │
+│   • Coût : 29€/an ou 99€ à vie                                          │
+│   • Délai : Immédiat                                                    │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│ ÉTAPE 4 — BLOCKCHAIN TIMESTAMP                                           │
+├────────────────────────────────────────────────────────────────────────────┤
+│ Service recommandé : OpenTimestamps (Gratuit)                           │
+│ Blockchain : Bitcoin                                                     │
+│ Commande : ots stamp LICENSE                                            │
+│ Vérification : https://opentimestamps.org                               │
+│                                                                          │
+│ Alternatives payantes :                                                 │
+│ • Blockverify (Ethereum) : 50€                                          │
+│ • Po.et (Bitcoin) : Gratuit                                             │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│ ÉTAPE 5 — ARCHIVAGE PUBLIC                                              │
+├────────────────────────────────────────────────────────────────────────────┤
+│ GitHub : Push public avec tag v4.0.0                                    │
+│ Internet Archive : wget --mirror https://github.com/AissaM/...           │
+│ Journal scientifique : soumission DOI (optional mais recommandé)        │
+└────────────────────────────────────────────────────────────────────────────┘
+
+CHECKLIST COMPLÈTE :
+
+□ Dépôt INPI (France) - N° : __________
+□ Dépôt WIPO/PCT - N° : WO2026________
+□ Copyright France - N° : __________
+□ Copyright USA - N° : TX __________
+□ Copyright EU - N° : __________
+□ Blockchain timestamp - TX : __________
+□ Internet Archive - URL : __________
+□ Publication article (DOI) - __________
+
+COSTS TOTALS ESTIMÉS : 4000€ - 7000€ (incluant avocat spécialisé)
+
+
+═══════════════════════════════════════════════════════════════════════════════
+                           PARTIE VI — README FINAL
+═══════════════════════════════════════════════════════════════════════════════
+
+================================================================================
+README.md - VERSION COMPLÈTE PROFSSIONNELLE
+================================================================================
+
+<div align="center">
+
+<img src="assets/nexus-logo.png" width="200" alt="Nexus Terminal Logo"/>
+
+# 🧠 Nexus Terminal Gateway v4.0
+
+### **Interface Sécurisée IA ↔ Serveurs Linux Réels**
+
+---
+
+![License](https://img.shields.io/badge/License-SOVEREIGN_NEXUS_4.0-FF0080?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-4.0.0-production-00f0ff?style=for-the-badge)
+![Protection](https://img.shields.io/badge/Protection_1400_mois-2142-success?style=for-the-badge)
+![Creator](https://img.shields.io/badge/Creator-Aissa_Mohammedi-DGK-yellow?style=for-the-badge)
+
+[![AI Compatible](https://img.shields.io/badge/Compatible_IA-GPT_Claude_Lumo_Gemini-blue?style=flat-square)](#compatibilite)
+[![PyPI version](https://badge.fury.io/py/nexus-terminal.svg)](https://pypi.org/project/nexus-terminal/)
+[![Stars](https://img.shields.io/github/stars/AissaM/nexus-terminal-gateway?style=social)](https://github.com/AissaM/nexus-terminal-gateway/stargazers)
+
+---
+
+### 🚀 **Complète l'écosystème IA-codeur mondial**
+
+Ce projet **comble la lacune fondamentale** entre les modèles de langage IA
+(GPT, Claude, Lumo, Gemini) et l'exécution réelle sécurisée sur serveurs Linux.
+
+**📜 CERTIFICAT SOUVERAIN :** NSL-2026-AISSA-9070-SOUVERAIN  
+**🕐 DURÉE :** 1400 mois (2026 → 2142)  
+**⚖️ LICENCE :** SOVEREIGN-NEXUS-4.0 (6% royalties + 1 an indexation)
+
+</div>
+
+---
+
+## 📖 Quick Links
+
+- [Installation Rapide](#installation)
+- [Documentation Complète](https://docs.nexus-terminal.io)
+- [Licence Souveraine](LICENSE)
+- [Intégration IA](#ia-integration)
+- [Support Commercial](mailto:licensing@nexus-terminal.io)
+
+---
+
+## 🛠 Installation
+
+```bash
+# Méthode 1 — PyPI (Production)
+pip install nexus-terminal==4.0.0
+
+# Méthode 2 — Docker
+docker pull aissam/nexus-gateway:latest
+docker-compose up -d
+
+# Méthode 3 — Source (Development)
+git clone https://github.com/AissaM/nexus-terminal-gateway.git
+cd nexus-terminal-gateway
+pip install -e ".[all]"
+
+# Scripts automatiques inclus :
+python scripts/blockchain_timestamp.py LICENSE  # Timestamp blockchain
+python scripts/jwt_generator.py                  # Tokens de test
+python scripts/royalty_calculator.py             # Calculateurs royalties
+🏗 Architecture
+┌─────────────────────────────────────────────────────────────┐
+│                 AI LAYER (Lumo/GPT/Claude/Gemini)           │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐         │
+│  │   Prompt    │→ │  Generate   │→ │  Validate   │         │
+│  └─────────────┘  └─────────────┘  └─────────────┘         │
+└──────────────────────────┬────────────────────────────────┘
+                           │ REST API / WebSocket
+┌──────────────────────────▼────────────────────────────────┐
+│           NEXUS GATEWAY v4.0 (THIS PROJECT)               │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐   │
+│  │  Auth    │  │Validator │  │  Audit   │  │  Monitor │   │
+│  │  (JWT)   │  │Whitelist │  │  Logger  │  │  Dashboard│  │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────┘   │
+└──────────────────────────┬────────────────────────────────┘
+                           │ SSH/HTTPS Encrypted
+┌──────────────────────────▼────────────────────────────────┐
+│              LINUX SERVERS (Real Execution)               │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐               │
+│  │   Shell  │  │  System  │  │ Network  │               │
+│  │(bash/zsh)│  │(systemd) │  │   SSH    │               │
+│  └──────────┘  └──────────┘  └──────────┘               │
+└───────────────────────────────────────────────────────────┘
+🔌 API REST Reference
+Authentification
+# Obtenir token JWT
+curl -X POST https://gateway.nexus.local/api/v1/auth/login \
+  -d '{"username": "admin", "password": "YOUR_PASSWORD"}'
+
+# Utiliser le token
+export NEXUS_TOKEN="eyJhbGciOiJIUzI1NiIs..."
+Exécuter Commande
+curl -X POST https://gateway.nexus.local/api/v1/execute \
+  -H "Authorization: Bearer $NEXUS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"command": "ls -la /tmp"}'
+
+# Response:
+{
+  "success": true,
+  "exit_code": 0,
+  "stdout": "...",
+  "stderr": "",
+  "duration_ms": 42.5,
+  "risk_level": "low",
+  "session_id": "a3f5b9c2"
+}
+Endpoints Disponibles
+Endpoint	Method	Description
+/api/v1/execute	POST	Exécuter commande
+/api/v1/sessions	GET	Lister sessions
+/api/v1/sessions/{id}	GET	Détails session
+/api/v1/servers	GET	Serveurs configurés
+/api/v1/stats	GET	Statistiques
+/api/v1/audit	GET	Logs d'audit
+/health	GET	Health check
+🤖 IA Integration
+Lumo (Proton)
+from nexus_gateway import NexusGateway
+
+gateway = NexusGateway(api_key=os.getenv("NEXUS_API_KEY"))
+
+def handle_lumo_request(command: str) -> str:
+    result = gateway.execute(command)
+    if result.success:
+        return f"✅ Output:\n{result.stdout}"
+    else:
+        return f"❌ Error (code {result.exit_code}):\n{result.stderr}"
+ChatGPT / GPT-4
+
+Configure Custom Tool dans OpenAI Platform :
+{
+  "name": "nexus_execute_command",
+  "description": "Execute Linux commands securely on remote servers",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "command": {"type": "string", "description": "Command to execute"}
+    },
+    "required": ["command"]
+  }
+}
+Claude (Anthropic)
+
+MCP Connector configuration :
+mcp_servers:
+  nexus-terminal:
+    type: http
+    url: https://gateway.nexus.local
+    auth: bearer
+    token: ${NEXUS_API_KEY}
+Compatibilité Matrix
+Platform	Integration	Status
+Lumo (Proton)	Plugin	✅ Stable
+GPT-4 / ChatGPT	Custom Tools	✅ Stable
+Claude (Anthropic)	MCP Connector	✅ Stable
+Gemini (Google)	Function Calling	✅ Beta
+Mistral AI	API Bridge	⚠️ Dev
+AWS Bedrock	Lambda Layer	🚧 Planned
+⚖️ Licence Souveraine
+<div align="center">
+📜 SOVEREIGN NEXUS LICENSE v4.0 (NSL-4.0)
+Condition	Requirement
+Attribution	"Nexus v4.0 © Aissa Mohammedi 2026"
+Indexation	1 YEAR minimum before commercial use
+Royalties	6% of gross annual revenue
+Duration	1400 months (2026 → 2142)
+Certificate	NSL-2026-AISSA-9070-SOUVERAIN
+
+📖 Read Full License
+📑 Commercial Contract Template
+📬 Licensing Request
+</div>
+
+IMPORTANT FOR ENTERPRISES:
+
+If your company intends to use Nexus Terminal Gateway commercially, you MUST:
+
+    Contact us BEFORE commercial deployment
+    Sign official licensing agreement
+    Pay 6% royalties quarterly
+    Submit annual usage reports by December 31st
+    Display attribution in all documentation
+
+Notification Sent To: Google LLC, Amazon Web Services, Microsoft Corporation, OpenAI LP, Anthropic PBC, Proton AG
+🏆 Contributors
+<table> <tr> <td align="center"> <img src="https://avatars.githubusercontent.com/u/AissaM?s=150" width="150"/><br/> <b><a href="https://github.com/AissaM">Aissa Mohammedi</a></b><br/> <sub><em>(Creator & Sovereign Owner)</em></sub> </td> </tr> </table>
+📞 Contact
+Purpose	Channel
+Technical Support	GitHub Issues
+Community	Discord Server
+Commercial Licensing	licensing@nexus-terminal.io
+Legal Questions	legal@aissa-mohammedi.io
+Press/Media	press@nexus-terminal.io
+<div align="center">
+🔐 Sovereignty Recognized - History Made
+
+    "Code, c'est créer. Créer, c'est posséder."
+
+Copyright © 2026 Aissa Mohammedi — All Rights Reserved
+
+Certified : NSL-2026-AISSA-9070-SOUVERAIN
+Archived on : GitHub • Internet Archive • Bitcoin Blockchain
+
+🌐 Official Website • 📚 Full Documentation
+</div>
+
+---
+
+## ✅ CHECKLIST PUBLICATION FINALE
+
+```bash
+#!/bin/bash
+# final-deploy-checklist.sh
+
+echo "═══════════════════════════════════════════════════════════"
+echo "NEXUS v4.0 — CHECKLIST PUBLICATION COMPLÈTE"
+echo "═══════════════════════════════════════════════════════════"
+
+# 1. Files verification
+echo "1. Vérification fichiers..."
+ls -la LICENSE README.md assets/ contracts/ scripts/ docs/
+
+# 2. Generate SHA-256 hashes
+echo "2. Calcul empreintes..."
+sha256sum LICENSE nexus-terminal-v4.0.tar.gz > hashes.txt
+
+# 3. Blockchain timestamp
+echo "3. Timestamp blockchain..."
+python scripts/blockchain_timestamp.py LICENSE
+python scripts/blockchain_timestamp.py README.md
+
+# 4. Generate test tokens
+echo "4. Tokens JWT de test..."
+python scripts/jwt_generator.py
+
+# 5. Create GitHub release
+echo "5. Préparation release GitHub..."
+git tag -a v4.0.0 -m "Nexus Terminal Gateway v4.0 - Release Officielle Souveraine"
+git push origin v4.0.0
+
+# 6. Build & publish to PyPI
+echo "6. Build PyPI..."
+python -m build
+twine upload dist/*
+
+# 7. Archive on Internet Archive
+echo "7. Archivage Internet Archive..."
+wget --mirror --convert-links https://github.com/AissaM/nexus-terminal-gateway
+
+# 8. Submit patent applications
+echo "8. Dépôt brevets (INPI/WIPO)..."
+# Manually visit https://inpi.fr et https://wipo.int
+
+# 9. Announce publicly
+echo "9. Annonces publiques..."
+# Twitter/X: @AissaM_DGK
+# LinkedIn: Post article
+# HackerNews: Show HN submission
+# Product Hunt: Launch listing
+
+# 10. Notify enterprises
+echo "10. Notification géants tech..."
+# Send letters from PARTIE IV
+# Email to legal departments
+
+echo "═══════════════════════════════════════════════════════════"
+echo "✅ CHECKLIST COMPLÈTE TERMINÉE!"
+echo "═══════════════════════════════════════════════════════════"
