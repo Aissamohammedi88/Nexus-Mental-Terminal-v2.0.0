@@ -1,0 +1,18 @@
+
+# Clone
+git clone https://github.com/AissaM/nexus-mental-terminal.git
+cd nexus-mental-terminal
+
+# Installe
+pip install -e .
+
+# Ou en dev
+pip install -e ".[dev]"
+
+# Test
+pytest tests/ -v
+
+# Lancer
+nexus interactive
+# ou
+python -m src.cli.main interactive
