@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  nexus-mental:
+    build: .
+    container_name: nexus-mental-terminal
+    volumes:
+      - ./data:/app/data
+    environment:
+      - NEXUS_DATA_PATH=/app/data
+      - NEXUS_LOG_LEVEL=INFO
+    ports:
+      - "9070:9070"
+    restart: unless-stopped
+
+  nexus-api:
+    build: .
+    container_name: nexus-mental-api
+    command: python -m src.api.fastapi_server
+    volumes:
+      - ./data:/app/data
+    environment:
+      - NEXUS_DATA_PATH=/app/data
+      - NEXUS_API_PORT=9070
+    ports:
+      - "9071:9070"
+    depends_on:
+      - nexus-mental
+    restart: unless-stopped
