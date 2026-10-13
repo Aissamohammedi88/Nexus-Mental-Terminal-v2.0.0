@@ -1,0 +1,24 @@
+# 🔐 Politiques de Sécurité Nexus Terminal Gateway v4.0
+
+## ⚠️ AVERTISSEMENTS CRITIQUES
+
+1. **Ne jamais exposer cette API sans authentification**
+2. **Toujours utiliser HTTPS/TLS**
+3. **Activer audit logging sans exception**
+4. **Limiter les commandes via whitelist**
+5. **Isoler dans conteneur Docker**
+
+## Configuration minimale requise
+
+```bash
+# Génération clés
+openssl genrsa -out nexus_private.pem 4096
+openssl rsa -in nexus_private.pem -pubout -out nexus_public.pem
+
+# Permissions
+chmod 600 nexus_private.pem
+chmod 644 nexus_public.pem
+
+# Variables d'environnement
+export NEXUS_SECRET_KEY=$(openssl rand -hex 32)
+export NEXUS_JWT_EXPIRY=3600
