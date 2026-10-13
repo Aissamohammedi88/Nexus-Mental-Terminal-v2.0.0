@@ -1,0 +1,31 @@
+NEXUS-OPEN-2.0 LICENSE
+Copyright (c) 2026 Aissa Mohammedi (DGK)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+1. The above copyright notice and this permission notice shall be included in
+   all copies or substantial portions of the Software.
+
+2. ATTRIBUTION — Any use of this Software, in whole or in part, must include
+   clear attribution to the original author:
+       Aissa Mohammedi (DGK)
+       https://github.com/Aissamohammedi88
+
+3. The Software is provided "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+
+4. The Software is a VIRTUAL/SIMULATED environment. It MUST NOT be presented
+   as a real system. Any tool, agent, or product built on top of it must
+   clearly disclose that it uses a mental/virtual terminal.
+
+5. Redistribution of modified versions must document the changes and
+   preserve this license.
+
+For the full legal text, see: https://github.com/Aissamohammedi88/nexus-mental-terminal
+
