@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  nexus-gateway:
+    build: .
+    container_name: nexus-terminal-gateway
+    ports:
+      - "9080:9080"  # API REST
+      - "9081:9081"  # Websocket
+    environment:
+      - NEXUS_ENV=production
+      - NEXUS_SECRET_KEY=${SECRET_KEY}
+      - NEXUS_AUDIT_LOG_PATH=/var/log/nexus/audit.log
+    volumes:
+      - ./config:/app/config:ro
+      - ./logs:/var/log/nexus
+      - nexus-data:/app/data
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+
+  nginx-proxy:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+    depends_on:
+      - nexus-gateway
+    restart: unless-stopped
+
+volumes:
+  nexus-data:
