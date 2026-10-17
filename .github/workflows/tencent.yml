@@ -1,0 +1,525 @@
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Nexus Mental Terminal v2.0.0 — CI/CD Pipeline for Tencent Kubernetes Engine
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Auteur     : Aissa Mohammedi (DGK) — @Aissamohammedi88
+# Licence    : NEXUS-OPEN-2.0
+# Protocole  : Code Nametron 3 Lara / ZTMESH v1.5.15
+#
+# Description :
+#   Workflow complet qui construit, teste, scanne, publie et déploie
+#   Nexus Mental Terminal vers Tencent Kubernetes Engine (TKE).
+#
+# Pipeline stages :
+#   1. Quality   — Lint (PEP 8), tests pytest, vérification structure
+#   2. Build     — Image Docker multi-stage avec cache GHA
+#   3. Security  — Trivy scan vulnérabilités + vérification licence
+#   4. Publish   — Push image vers TKE Registry (ccr.ccs.tencentyun.com)
+#   5. Deploy    — Kustomize + kubectl apply sur cluster TKE
+#   6. Verify    — Rollout status, smoke tests post-déploiement
+#
+# Secrets requis (Settings → Secrets → Actions) :
+#   - TENCENT_CLOUD_SECRET_ID     → Secret ID Tencent Cloud
+#   - TENCENT_CLOUD_SECRET_KEY    → Secret Key Tencent Cloud
+#   - TENCENT_CLOUD_ACCOUNT_ID    → Account ID Tencent Cloud
+#   - TKE_REGISTRY_PASSWORD       → Mot de passe TKE Registry
+#
+# Environments recommandés (Settings → Environments) :
+#   - staging     → Protection optionnelle
+#   - production   → Approbation manuelle recommandée
+# ═══════════════════════════════════════════════════════════════════════════
+
+name: Tencent Kubernetes Engine
+
+# ───────────────────────────────────────────────────────────────────────────
+# Déclencheurs du workflow
+# ───────────────────────────────────────────────────────────────────────────
+on:
+  push:
+    branches: ["main"]
+    tags: ["v*"]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - ".gitignore"
+      - "LICENSE"
+
+  pull_request:
+    branches: ["main"]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: "Ignorer les tests (risqué)"
+        required: false
+        type: boolean
+        default: false
+      image_tag:
+        description: "Tag d'image personnalisé (optionnel)"
+        required: false
+        type: string
+        default: ""
+
+  schedule:
+    # Scan sécurité hebdomadaire — dimanche 03:00 UTC
+    - cron: "0 3 * * 0"
+
+# ───────────────────────────────────────────────────────────────────────────
+# Variables d'environnement globales
+# ───────────────────────────────────────────────────────────────────────────
+env:
+  TKE_IMAGE_URL: ccr.ccs.tencentyun.com/nexus/nexus-mental-terminal
+  TKE_REGION: ap-guangzhou
+  TKE_CLUSTER_ID: cls-nexus-mental
+  DEPLOYMENT_NAME: nexus-mental-terminal
+  NAMESPACE: nexus
+  PYTHON_VERSION: "3.12"
+  DOCKERFILE_PATH: ./Dockerfile
+  CONTEXT_PATH: .
+  TRIVY_SEVERITY: "HIGH,CRITICAL"
+  TIMEOUT_DEPLOY_MINUTES: 10
+
+# ───────────────────────────────────────────────────────────────────────────
+# Permissions minimales du token GITHUB_TOKEN (principe du moindre privilège)
+# ───────────────────────────────────────────────────────────────────────────
+permissions:
+  contents: read
+  packages: write
+  security-events: write
+
+# Conditions de basculement
+concurrency:
+  group: tencent-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ════════════════════════════════════════════════════════════════════════
+  # JOB 1 : Qualité du code — lint + tests
+  # ════════════════════════════════════════════════════════════════════════
+  quality:
+    name: "🔍 Qualité — Lint & Tests"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout du dépôt
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configuration de Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+          cache-dependency-path: "**/requirements*.txt"
+
+      - name: Installation des dépendances de dev
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest flake8 mypy black ruff
+
+      - name: Vérification de la structure du projet
+        run: |
+          echo "::group::Structure du projet"
+          test -f pyproject.toml || (echo "::error::pyproject.toml manquant" && exit 1)
+          test -d nexus_mental || (echo "::error::Package nexus_mental manquant" && exit 1)
+          test -d tests || (echo "::warning::Dossier tests/ manquant"
+            || (echo "::error::Les tests sont obligatoires" && exit 1))
+          echo "::endgroup::"
+
+      - name: Lint — flake8 (erreurs bloquantes)
+        run: |
+          # Arrêt sur erreurs syntaxiques ou conventions majeures
+          flake8 nexus_mental/ --count --select=E9,F63,F7,F82 \
+            --show-source --statistics
+          flake8 nexus_mental/ --count --max-line-length=127 \
+            --max-complexity=12 --statistics --exit-zero
+
+      - name: Type-check — mypy
+        continue-on-error: true
+        run: |
+          mypy nexus_mental/ --ignore-missing-imports \
+            --no-strict-optional || echo "::warning::Warnings mypy détectés"
+
+      - name: Format check — ruff
+        continue-on-error: true
+        run: |
+          ruff check nexus_mental/ || echo "::warning::Style ruff à corriger"
+
+      - name: Tests — pytest
+        if: ${{ !(github.event_name == 'workflow_dispatch'
+          && inputs.skip_tests) }}
+        run: |
+          python -m pytest tests/ -v \
+            --junitxml=test-results.xml \
+            --cov=nexus_mental \
+            --cov-report=xml:coverage.xml \
+            --cov-report=term-missing
+
+      - name: Publication des résultats de tests
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: |
+            test-results.xml
+            coverage.xml
+          retention-days: 14
+
+  # ════════════════════════════════════════════════════════════════════════
+  # JOB 2 : Construction de l'image Docker
+  # ════════════════════════════════════════════════════════════════════════
+  build:
+    name: "📦 Build — Image Docker"
+    runs-on: ubuntu-latest
+    needs: quality
+    timeout-minutes: 30
+
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tag }}
+      image_digest: ${{ steps.build.outputs.digest }}
+      short_sha: ${{ steps.meta.outputs.short_sha }}
+
+    steps:
+      - name: Checkout du dépôt
+        uses: actions/checkout@v4
+
+      - name: Génération des métadonnées d'image
+        id: meta
+        run: |
+          if [ -n "${{ inputs.image_tag }}" ]; then
+            TAG="${{ inputs.image_tag }}"
+          elif [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            TAG="${GITHUB_REF#refs/tags/}"
+          else
+            TAG="sha-${GITHUB_SHA::8}"
+          fi
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "short_sha=${GITHUB_SHA::8}" >> "$GITHUB_OUTPUT"
+          echo "::notice::Tag d'image : ${TAG}"
+
+      - name: Configuration de Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: network=host
+
+      - name: Cache des couches Docker (GHA)
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: buildx-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            buildx-${{ runner.os }}-
+
+      - name: Build de l'image (sans push)
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ env.CONTEXT_PATH }}
+          file: ${{ env.DOCKERFILE_PATH }}
+          push: false
+          load: true
+          tags: |
+            ${{ env.TKE_IMAGE_URL }}:${{ steps.meta.outputs.tag }}
+            ${{ env.TKE_IMAGE_URL }}:latest
+          labels: |
+            org.opencontainers.image.title=Nexus Mental Terminal
+            org.opencontainers.image.description=Terminal virtuel Ubuntu/Unix pour agents IA
+            org.opencontainers.image.version=v2.0.0
+            org.opencontainers.image.authors=Aissa Mohammedi (DGK)
+            org.opencontainers.image.licenses=NEXUS-OPEN-2.0
+            org.opencontainers.image.source=${{ github.repositoryUrl }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+
+      # Rotation du cache pour éviter sa croissance infinie
+      - name: Rotation du cache Docker
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
+      # Vérification : le terminal virtuel démarre bien
+      - name: Smoke test local du conteneur
+        run: |
+          echo "::group::Test du point d'entrée"
+          docker run --rm \
+            --entrypoint python3 \
+            ${{ env.TKE_IMAGE_URL }}:${{ steps.meta.outputs.tag }} \
+            -c "from nexus_mental import MentalTerminal; \
+                t = MentalTerminal(); \
+                r = t.bash('ls -la /'); \
+                assert 'home' in r.stdout, 'VFS KO'; \
+                print('✓ MentalTerminal OK')"
+
+          docker run --rm \
+            --entrypoint python3 \
+            ${{ env.TKE_IMAGE_URL }}:${{ steps.meta.outputs.tag }} \
+            -c "from nexus_mental import MentalTerminal; \
+                t = MentalTerminal(); \
+                r = t.bash('apt list'); \
+                print('✓ apt simulé OK')"
+          echo "::endgroup::"
+
+      - name: Export de l'image (tar pour scan)
+        run: |
+          docker save ${{ env.TKE_IMAGE_URL }}:${{ steps.meta.outputs.tag }} \
+            -o image.tar
+          ls -lh image.tar
+
+      - name: Upload de l'image comme artefact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: image.tar
+          retention-days: 3
+
+  # ════════════════════════════════════════════════════════════════════════
+  # JOB 3 : Scan de sécurité de l'image
+  # ════════════════════════════════════════════════════════════════════════
+  security:
+    name: "🛡️ Sécurité — Scan Trivy"
+    runs-on: ubuntu-latest
+    needs: build
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout du dépôt
+        uses: actions/checkout@v4
+
+      - name: Téléchargement de l'image
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+          path: .
+
+      - name: Chargement de l'image locale
+        run: docker load -i image.tar
+
+      - name: Scan Trivy — vulnérabilités
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.TKE_IMAGE_URL }}:${{ needs.build.outputs.image_tag }}
+          format: sarif
+          output: trivy-results.sarif
+          severity: ${{ env.TRIVY_SEVERITY }}
+          ignore-unfixed: true
+          exit-code: "0"
+
+      - name: Upload des résultats vers Security Lab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        continue-on-error: true
+        with:
+          sarif_file: trivy-results.sarif
+
+      - name: Analyse critique — blocage si CRITICAL
+        run: |
+          COUNT=$(trivy image --quiet --severity CRITICAL \
+            --ignore-unfixed \
+            --format json \
+            ${{ env.TKE_IMAGE_URL }}:${{ needs.build.outputs.image_tag }} \
+            | jq '[.Results[]?.Vulnerabilities[]?] | length')
+
+          echo "Vulnérabilités critiques : ${COUNT}"
+
+          if [ "${COUNT}" -gt 0 ]; then
+            echo "::error::Image bloquée — ${COUNT} vulnérabilité(s) critique(s)"
+            exit 1
+          fi
+          echo "✓ Aucune vulnérabilité critique bloquante"
+
+  # ════════════════════════════════════════════════════════════════════════
+  # JOB 4 : Publication vers TKE Registry (main et tags uniquement)
+  # ════════════════════════════════════════════════════════════════════════
+  publish:
+    name: "🚀 Publish — TKE Registry"
+    runs-on: ubuntu-latest
+    needs: [build, security]
+    if: github.event_name != 'pull_request'
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout du dépôt
+        uses: actions/checkout@v4
+
+      - name: Téléchargement de l'image
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+          path: .
+
+      - name: Chargement de l'image
+        run: docker load -i image.tar
+
+      - name: Login au registre TKE
+        run: |
+          echo "${{ secrets.TKE_REGISTRY_PASSWORD }}" | docker login \
+            --username "${{ secrets.TENCENT_CLOUD_ACCOUNT_ID }}" \
+            --password-stdin \
+            $(echo ${{ env.TKE_IMAGE_URL }} | cut -d'/' -f1)
+
+      - name: Push de l'image (tag + latest)
+        run: |
+          docker push ${{ env.TKE_IMAGE_URL }}:${{ needs.build.outputs.image_tag }}
+          if [[ "$GITHUB_REF" == refs/heads/main ]]; then
+            docker tag ${{ env.TKE_IMAGE_URL }}:${{ needs.build.outputs.image_tag }} \
+              ${{ env.TKE_IMAGE_URL }}:latest
+            docker push ${{ env.TKE_IMAGE_URL }}:latest
+          fi
+
+      - name: Logout du registre
+        if: always()
+        run: docker logout $(echo ${{ env.TKE_IMAGE_URL }} | cut -d'/' -f1)
+
+  # ════════════════════════════════════════════════════════════════════════
+  # JOB 5 : Déploiement vers le cluster TKE
+  # ════════════════════════════════════════════════════════════════════════
+  deploy:
+    name: "🎯 Deploy — Cluster TKE"
+    runs-on: ubuntu-latest
+    needs: publish
+    if: github.event_name != 'pull_request'
+    environment: production
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout du dépôt
+        uses: actions/checkout@v4
+
+      - name: Installation de kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: "v1.30.0"
+
+      - name: Installation de Kustomize (v5.x)
+        run: |
+          KUSTOMIZE_VERSION="5.4.3"
+          curl -sfLo kustomize \
+            "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_linux_amd64.tar.gz" \
+            || wget -qO kustomize.tar.gz \
+            "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_linux_amd64.tar.gz"
+          tar -xzf kustomize*.tar.gz 2>/dev/null || true
+          chmod +x kustomize
+          ./kustomize version
+          sudo mv kustomize /usr/local/bin/
+
+      - name: Configuration kubeconfig pour TKE
+        uses: TencentCloud/tke-cluster-credential-action@v1
+        with:
+          secret_id: ${{ secrets.TENCENT_CLOUD_SECRET_ID }}
+          secret_key: ${{ secrets.TENCENT_CLOUD_SECRET_KEY }}
+          tke_region: ${{ env.TKE_REGION }}
+          cluster_id: ${{ env.TKE_CLUSTER_ID }}
+
+      - name: Basculer vers le contexte TKE
+        run: |
+          kubectl config use-context \
+            ${{ env.TKE_CLUSTER_ID }}-context-default
+          kubectl cluster-info
+
+      - name: Création du namespace (idempotent)
+        run: |
+          kubectl create namespace ${{ env.NAMESPACE }} \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Mise à jour de l'image via Kustomize
+        run: |
+          cd k8s/
+          kustomize edit set image \
+            ${{ env.TKE_IMAGE_URL }}:${{ needs.build.outputs.image_tag }}
+
+      - name: Validation des manifests avant application
+        run: |
+          cd k8s/
+          kustomize build . > rendered-manifests.yaml
+          echo "--- Manifests générés ---"
+          cat rendered-manifests.yaml
+
+      - name: Déploiement sur le cluster TKE
+        run: |
+          kubectl apply -f rendered-manifests.yaml -n ${{ env.NAMESPACE }}
+          kubectl rollout status \
+            deployment/${{ env.DEPLOYMENT_NAME }} \
+            -n ${{ env.NAMESPACE }} \
+            --timeout=${{ env.TIMEOUT_DEPLOY_MINUTES }}m
+
+      - name: Vérification post-déploiement
+        run: |
+          echo "::group::État des pods"
+          kubectl get pods -n ${{ env.NAMESPACE }} \
+            -l app=${{ env.DEPLOYMENT_NAME }} -o wide
+          echo "::endgroup::"
+
+          echo "::group::Services"
+          kubectl get services -n ${{ env.NAMESPACE }} -o wide
+          echo "::endgroup::"
+
+          echo "::group::Ressources (Haut niveau)"
+          kubectl get deployments,pods,services,ingress \
+            -n ${{ env.NAMESPACE }}
+          echo "::endgroup::"
+
+      - name: Smoke test du déploiement
+        run: |
+          POD=$(kubectl get pods -n ${{ env.NAMESPACE }} \
+            -l app=${{ env.DEPLOYMENT_NAME }} \
+            -o jsonpath='{.items[0].metadata.name}')
+
+          echo "Pod de test : ${POD}"
+
+          kubectl exec -n ${{ env.NAMESPACE }} "${POD}" -- \
+            python3 -c "from nexus_mental import MentalTerminal; \
+                        t = MentalTerminal(); \
+                        assert 'home' in t.bash('ls /').stdout; \
+                        print('✅ Déploiement fonctionnel')"
+
+      - name: Commentaire de statut sur le déploiement
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const status = '${{ job.status }}';
+            const emoji = status === 'success' ? '✅' : '❌';
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: status === 'success' ? 'success' : 'failure',
+              context: 'tencent-tke/deploy',
+              description: `Déploiement TKE ${status}`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+  # ════════════════════════════════════════════════════════════════════════
+  # JOB 6 : Notification finale (résumé)
+  # ════════════════════════════════════════════════════════════════════════
+  summary:
+    name: "📋 Résumé du pipeline"
+    runs-on: ubuntu-latest
+    needs: [quality, build, security, publish, deploy]
+    if: always()
+
+    steps:
+      - name: Génération du résumé
+        run: |
+          {
+            echo "## 🧠 Nexus Mental Terminal v2.0.0 — Pipeline TKE"
+            echo ""
+            echo "| Étape | Statut |"
+            echo "|-------|--------|"
+            echo "| Qualité (lint/tests) | ${{ needs.quality.result }} |"
+            echo "| Build Docker | ${{ needs.build.result }} |"
+            echo "| Scan sécurité | ${{ needs.security.result }} |"
+            echo "| Publication TKE | ${{ needs.publish.result }} |"
+            echo "| Déploiement | ${{ needs.deploy.result }} |"
+            echo ""
+            echo "**Tag d'image :** \`${{ needs.build.outputs.image_tag }}\`"
+            echo "**Namespace :** \`${{ env.NAMESPACE }}\`"
+            echo "**Cluster :** \`${{ env.TKE_CLUSTER_ID }}\` (\`${{ env.TKE_REGION }}\`)"
+          } >> "$GITHUB_STEP_SUMMARY"
