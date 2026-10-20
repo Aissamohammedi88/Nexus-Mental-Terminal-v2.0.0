@@ -1,0 +1,273 @@
+ if line.startswith("PY:"):code = line[3:].strip()
+result = terminal.python(code)
+else:
+result = terminal.bash(line)
+
+if result.stdout:
+print(result.stdout, end="")
+if result.stderr:
+print(f"\033[91m{result.stderr}\033[0m", end="")
+
+if result.exit_code != 0:
+print(f"\033[90m[exit code: {result.exit_code}]\033[0m")
+
+except KeyboardInterrupt:
+print("\n\n👋 À bientôt\n")
+break
+except Exception as e:
+print(f"\033[91mErreur terminal : {e}\033[0m")
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# BRIDGE VERS LES API RÉELLES (Bash, PowerShell, Docker, SSH)
+# ══════════════════════════════════════════════════════════════════════════════
+
+class RealTerminalBridge:
+"""
+Pont vers les vrais terminaux (Bash, PowerShell, Docker, SSH).
+À utiliser avec précaution — l'IA peut exécuter de vraies commandes.
+"""
+
+@staticmethod
+def execute_bash_real(command: str, timeout: int = 30) -> CommandResult:
+"""Exécute une vraie commande Bash sur le système Linux/Mac."""
+start = time.time()
+r = CommandResult(command=command)
+try:
+result = subprocess.run(
+command, shell=True, capture_output=True, text=True, timeout=timeout
+)
+r.stdout = result.stdout
+r.stderr = result.stderr
+r.exit_code = result.returncode
+except subprocess.TimeoutExpired:
+r.stderr = f"Timeout après {timeout}s\n"
+r.exit_code = 124
+except Exception as e:
+r.stderr = f"Erreur Bash : {e}\n"
+r.exit_code = 1
+r.duration_ms = (time.time() - start) * 1000
+return r
+
+@staticmethod
+def execute_powershell_real(command: str, timeout: int = 30) -> CommandResult:
+"""Exécute une vraie commande PowerShell (Windows)."""
+start = time.time()
+r = CommandResult(command=command)
+try:
+result = subprocess.run(
+["powershell", "-Command", command],
+capture_output=True, text=True, timeout=timeout
+)
+r.stdout = result.stdout
+r.stderr = result.stderr
+r.exit_code = result.returncode
+except FileNotFoundError:
+r.stderr = "PowerShell non trouvé sur ce système.\n"
+r.exit_code = 127
+except subprocess.TimeoutExpired:
+r.stderr = f"Timeout après {timeout}s\n"
+r.exit_code = 124
+except Exception as e:
+r.stderr = f"Erreur PowerShell : {e}\n"
+r.exit_code = 1
+r.duration_ms = (time.time() - start) * 1000
+return r
+
+@staticmethod
+def execute_docker(command: str, container: str = "alpine", timeout: int = 30) -> CommandResult:
+"""Exécute une commande dans un conteneur Docker isolé."""
+start = time.time()
+r = CommandResult(command=f"docker run --rm {container} {command}")
+try:
+result = subprocess.run(
+["docker", "run", "--rm", container, "sh", "-c", command],
+capture_output=True, text=True, timeout=timeout
+)
+r.stdout = result.stdout
+r.stderr = result.stderr
+r.exit_code = result.returncode
+except FileNotFoundError:
+r.stderr = "Docker non trouvé. Installe Docker.\n"
+r.exit_code = 127
+except subprocess.TimeoutExpired:
+r.stderr = f"Timeout Docker après {timeout}s\n"
+r.exit_code = 124
+except Exception as e:
+r.stderr = f"Erreur Docker : {e}\n"
+r.exit_code = 1
+r.duration_ms = (time.time() - start) * 1000
+return r
+
+@staticmethod
+def execute_ssh(host: str, user: str, command: str, key_path: str = None) -> CommandResult:
+"""Exécute une commande via SSH (nécessite paramiko)."""
+start = time.time()
+r = CommandResult(command=f"ssh {user}@{host} '{command}'")
+try:
+import paramiko
+client = paramiko.SSHClient()
+client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+client.connect(hostname=host, username=user, key_filename=key_path, timeout=10)
+stdin, stdout, stderr = client.exec_command(command, timeout=30)
+r.stdout = stdout.read().decode()
+r.stderr = stderr.read().decode()
+r.exit_code = stdout.channel.recv_exit_status()
+client.close()
+except ImportError:
+r.stderr = "paramiko non installé. pip install paramiko\n"
+r.exit_code = 127
+except Exception as e:
+r.stderr = f"Erreur SSH : {e}\n"
+r.exit_code = 1
+r.duration_ms = (time.time() - start) * 1000
+return r
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# EXTENSION DE MentalTerminalTool AVEC LES VRAIS TERMINAUX
+# ══════════════════════════════════════════════════════════════════════════════
+
+class HybridTerminalTool(MentalTerminalTool):
+"""
+Version hybride : terminal mental par défaut + accès aux vrais terminaux.
+"""
+
+def __init__(self):
+super().__init__()
+self.bridge = RealTerminalBridge()
+
+@staticmethod
+def get_tool_schema() -> List[Dict[str, Any]]:
+"""Ajoute les tools réels à la liste."""
+base_schema = MentalTerminalTool.get_tool_schema()
+real_schema = [
+{
+"type": "function",
+"function": {
+"name": "real_bash",
+"description": "Exécute une VRAIE commande bash sur le système. ⚠️ ATTENTION : aucun sandbox.",
+"parameters": {
+"type": "object",
+"properties": {
+"command": {"type": "string"},
+"timeout": {"type": "integer", "default": 30}
+},
+"required": ["command"]
+}
+}
+},
+{
+"type": "function",
+"function": {
+"name": "real_powershell",
+"description": "Exécute une VRAIE commande PowerShell (Windows).",
+"parameters": {
+"type": "object",
+"properties": {
+"command": {"type": "string"},
+"timeout": {"type": "integer", "default": 30}
+},
+"required": ["command"]
+}
+}
+},
+{
+"type": "function",
+"function": {
+"name": "docker_exec",
+"description": "Exécute une commande dans un conteneur Docker isolé (sandbox réel).",
+"parameters": {
+"type": "object",
+"properties": {
+"command": {"type": "string"},
+"container": {"type": "string", "default": "alpine"}
+},
+"required": ["command"]
+}
+}
+},
+{
+"type": "function",
+"function": {
+"name": "ssh_exec",
+"description": "Exécute une commande via SSH sur une machine distante.",
+"parameters": {
+"type": "object",
+"properties": {
+"host": {"type": "string"},
+"user": {"type": "string"},
+"command": {"type": "string"},
+"key_path": {"type": "string"}
+},
+"required": ["host", "user", "command"]
+}
+}
+},
+]
+return base_schema + real_schema
+
+def execute_tool(self, name: str, args: Dict[str, Any]) -> Dict[str, Any]:
+"""Exécute le bon terminal selon le tool demandé."""
+if name == "real_bash":
+result = self.bridge.execute_bash_real(args["command"], args.get("timeout", 30))
+return result.to_dict()
+elif name == "real_powershell":
+result = self.bridge.execute_powershell_real(args["command"], args.get("timeout", 30))
+return result.to_dict()
+elif name == "docker_exec":
+result = self.bridge.execute_docker(args["command"], args.get("container", "alpine"))
+return result.to_dict()
+elif name == "ssh_exec":
+result = self.bridge.execute_ssh(
+args["host"], args["user"], args["command"], args.get("key_path")
+)
+return result.to_dict()
+else:
+return super().execute_tool(name, args)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# POINT D'ENTRÉE
+# ══════════════════════════════════════════════════════════════════════════════
+
+if __name__ == "__main__":
+import argparse
+
+parser = argparse.ArgumentParser(
+description="Nexus Mental Terminal — Environnement d'exécution isolé + Bridge Réel"
+)
+parser.add_argument("--demo", action="store_true", help="Lancer la démo interactive")
+parser.add_argument("--test", action="store_true", help="Lancer les tests")
+
+args = parser.parse_args()
+
+if args.test:
+print("🧪 Lancement des tests...\n")
+term = MentalTerminal()
+
+tests = [
+("ls -la", "Test listing"),
+("mkdir /tmp/test", "Test création dossier"),
+("echo 'Hello Nexus' > /tmp/test/hello.txt", "Test écriture"),
+("cat /tmp/test/hello.txt", "Test lecture"),
+("python3 -c 'print(2+2)'", "Test Python"),
+]
+
+for cmd, desc in tests:
+print(f"[{desc}] $ {cmd}")
+res = term.execute(cmd)
+if res.stdout:
+print(f" -> {res.stdout.strip()}")
+if res.stderr:
+print(f" !! {res.stderr.strip()}")
+print(f" (Exit: {res.exit_code})\n")
+
+print("✅ Tests terminés. L'environnement mental est prêt.")
+
+print("🔌 Test du bridge Docker (si dispo) :")
+real_res = RealTerminalBridge.execute_docker("echo 'Hello from Docker'")
+print(f" -> {real_res.stdout.strip() or real_res.stderr.strip()}")
+
+elif args.demo or len(sys.argv) == 1:
+demo()
