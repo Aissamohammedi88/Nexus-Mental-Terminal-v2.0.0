@@ -1,0 +1,1277 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+═══════════════════════════════════════════════════════════════════════════
+NEXUS INTELLIGENT TERMINAL v2.0 — AI-POWERED SHELL ENVIRONMENT
+═══════════════════════════════════════════════════════════════════════════
+
+Terminal intelligent pour IA avec exécution multi-environnements :
+- Bash/Linux/Mac
+- PowerShell/Windows  
+- Docker containers
+- SSH remote servers
+- Python sandbox
+- Windows CMD
+- Git operations
+- System management
+- Network tools
+
+Auteur : nexus
+Date : 20 octobre 2026
+License : Propriétaire (voir LICENSE.md)
+Version : 2.0
+"""
+
+# ══════════════════════════════════════════════════════════════════════════════
+# IMPORTATIONS SYSTÈME
+# ══════════════════════════════════════════════════════════════════════════════
+
+import os
+import sys
+import time
+import json
+import shlex
+import signal
+import socket
+import hashlib
+import secrets
+import platform
+import subprocess
+import threading
+import tempfile
+import shutil
+import re
+import logging
+import argparse
+import traceback
+from datetime import datetime, timedelta
+from typing import (
+    Dict, List, Any, Optional, Tuple, 
+    Union, Callable, Set, BinaryIO
+)
+from pathlib import Path
+from dataclasses import dataclass, field, asdict
+from enum import Enum, auto
+from abc import ABC, abstractmethod
+from contextlib import contextmanager
+from functools import wraps
+import base64
+import uuid
+import inspect
+import concurrent.futures
+from queue import Queue, Empty
+import pickle
+
+try:
+    import paramiko
+    PARAMIKO_AVAILABLE = True
+except ImportError:
+    PARAMIKO_AVAILABLE = False
+    print("⚠️ paramiko non installé. Pour SSH : pip install paramiko")
+
+try:
+    import docker
+    DOCKER_AVAILABLE = True
+except ImportError:
+    DOCKER_AVAILABLE = False
+    print("⚠️ docker non installé. Pour Docker SDK : pip install docker")
+
+try:
+    import psutil
+    PSUTIL_AVAILABLE = True
+except ImportError:
+    PSUTIL_AVAILABLE = False
+
+try:
+    from colorama import init, Fore, Back, Style
+    COLORAMA_AVAILABLE = True
+    init(autoreset=True)
+except ImportError:
+    COLORAMA_AVAILABLE = False
+    # Défaut si colorama absent
+    class Fore:
+        GREEN = ''
+        RED = ''
+        YELLOW = ''
+        BLUE = ''
+        MAGENTA = ''
+        CYAN = ''
+        WHITE = ''
+    class Style:
+        BRIGHT = ''
+        DIM = ''
+        RESET_ALL = ''
+
+# ══════════════════════════════════════════════════════════════════════════════
+# CONFIGURATION CENTRALISÉE
+# ══════════════════════════════════════════════════════════════════════════════
+
+@dataclass
+class TerminalConfig:
+    """Configuration centrale du terminal."""
+    
+    # Timeout par défaut (secondes)
+    DEFAULT_TIMEOUT: int = 30
+    
+    # Taille max sortie (octets)
+    MAX_OUTPUT_SIZE: int = 10 * 1024 * 1024  # 10MB
+    
+    # Sandbox par défaut
+    SANDBOX_ENABLED: bool = True
+    
+    # Journaux
+    LOG_LEVEL: str = "INFO"
+    LOG_FILE: str = "nexus_terminal.log"
+    
+    # Sécurité
+    BLOCKED_COMMANDS: List[str] = field(default_factory=lambda: [
+        "rm -rf /", "mkfs", "dd if=/dev/zero", ":(){:|:&};:",
+        "chmod -R 777 /", "passwd root", "shutdown", "reboot"
+    ])
+    
+    # Containers Docker
+    DEFAULT_CONTAINER: str = "alpine:latest"
+    CONTAINER_MEMORY_MB: int = 512
+    
+    # SSH
+    SSH_TIMEOUT: int = 10
+    SSH_KEEP_ALIVE: int = 30
+    
+    # Performance
+    MAX_CONCURRENT_COMMANDS: int = 10
+    COMMAND_HISTORY_SIZE: int = 1000
+    
+    # Couleurs
+    USE_COLORS: bool = True
+    
+    # Audit
+    AUDIT_LOG: bool = True
+
+# ══════════════════════════════════════════════════════════════════════════════
+# ÉNUMÉRATIONS
+# ══════════════════════════════════════════════════════════════════════════════
+
+class ShellType(Enum):
+    TYPES DE SHELL
+    BASH = auto()
+    POWERSHELL = auto()
+    CMD = auto()
+    PYTHON = auto()
+    DOCKER = auto()
+    SSH = auto()
+    GIT = auto()
+    SYSTEM = auto()
+
+class ExecutionStatus(Enum):
+    STATUT EXÉCUTION
+    SUCCESS = auto()
+    FAILED = auto()
+    TIMEOUT = auto()
+    BLOCKED = auto()
+    ERROR = auto()
+
+class SecurityLevel(Enum):
+    NIVEAUX SÉCURITÉ
+    LOW = auto()      # Aucune restriction
+    MEDIUM = auto()   # Commands bloquées seulement
+    HIGH = auto()     # Sandbox + restrictions
+    PARANOID = auto() # Readonly + sandbox stricte
+
+# ══════════════════════════════════════════════════════════════════════════════
+# RÉSULTATS ET DONNÉES
+# ══════════════════════════════════════════════════════════════════════════════
+
+@dataclass
+class CommandResult:
+    """Résultat d'exécution de commande."""
+    
+    command: str
+    shell_type: ShellType = ShellType.BASH
+    exit_code: int = 0
+    stdout: str = ""
+    stderr: str = ""
+    duration_ms: float = 0.0
+    timestamp: datetime = field(default_factory=datetime.now)
+    security_level: SecurityLevel = SecurityLevel.MEDIUM
+    blocked: bool = False
+    timeout: bool = False
+    pid: Optional[int] = None
+    memory_usage_mb: float = 0.0
+    cpu_percent: float = 0.0
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Conversion dict JSON."""
+        return {
+            "command": self.command,
+            "shell_type": self.shell_type.name,
+            "exit_code": self.exit_code,
+            "stdout": self.stdout,
+            "stderr": self.stderr,
+            "duration_ms": self.duration_ms,
+            "timestamp": self.timestamp.isoformat(),
+            "blocked": self.blocked,
+            "timeout": self.timeout,
+            "memory_mb": self.memory_usage_mb,
+            "cpu_percent": self.cpu_percent
+        }
+    
+    @property
+    def success(self) -> bool:
+        """Statut succès."""
+        return self.exit_code == 0 and not self.blocked
+    
+    @property
+    def output_summary(self) -> str:
+        """Résumé concis."""
+        if self.blocked:
+            return f"⛔ COMMANDE BLOQUÉE"
+        if self.timeout:
+            return f"⏱️ TIMEOUT ({self.duration_ms:.0f}ms)"
+        if self.exit_code != 0:
+            return f"❌ ERREUR (code {self.exit_code})"
+        return f"✅ SUCCÈS ({len(self.stdout)} octets)"
+
+@dataclass
+class SessionData:
+    """Données session active."""
+    
+    session_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    start_time: datetime = field(default_factory=datetime.now)
+    commands_executed: int = 0
+    total_duration_ms: float = 0.0
+    failed_commands: int = 0
+    security_alerts: List[str] = field(default_factory=list)
+    environment: Dict[str, str] = field(default_factory=dict)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# LOGGER
+# ══════════════════════════════════════════════════════════════════════════════
+
+class NexusLogger:
+    """Système de journalisation complet."""
+    
+    def __init__(self, config: TerminalConfig):
+        self.config = config
+        self.logger = logging.getLogger("NexusTerminal")
+        self.logger.setLevel(getattr(logging, config.LOG_LEVEL))
+        
+        # Console handler
+        ch = logging.StreamHandler()
+        ch.setLevel(logging.INFO)
+        
+        # File handler
+        fh = logging.FileHandler(config.LOG_FILE)
+        fh.setLevel(logging.DEBUG)
+        
+        # Format
+        formatter = logging.Formatter(
+            '%(asctime)s | %(levelname)-8s | %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S'
+        )
+        ch.setFormatter(formatter)
+        fh.setFormatter(formatter)
+        
+        self.logger.addHandler(ch)
+        self.logger.addHandler(fh)
+    
+    def debug(self, msg: str):
+        self.logger.debug(msg)
+    
+    def info(self, msg: str):
+        self.logger.info(msg)
+    
+    def warning(self, msg: str):
+        self.logger.warning(msg)
+    
+    def error(self, msg: str):
+        self.logger.error(msg)
+    
+    def audit(self, msg: str):
+        """Journal d'audit."""
+        if self.config.AUDIT_LOG:
+            self.logger.info(f"[AUDIT] {msg}")
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SÉCURITÉ & VALIDATION
+# ══════════════════════════════════════════════════════════════════════════════
+
+class SecurityValidator:
+    """Validateur sécurité pour commandes."""
+    
+    def __init__(self, config: TerminalConfig):
+        self.config = config
+        self.blocked_patterns = [
+            r"rm\s+-rf\s+/",
+            r"mkfs\.+",
+            r"dd\s+if=/dev/zero",
+            r":\{\}\:\|\:\&\;\{\}\:",
+            r"chmod\s+-R\s+777\s+/",
+            r"passwd\s+root",
+            r"sudo\s+su",
+            r">/\dev/",
+            r"echo\s+".* >/etc/",
+            r"wget\s+http.*\|.*sh",
+            r"curl\s+http.*\|.*bash"
+        ]
+    
+    def validate(self, command: str, level: SecurityLevel) -> Tuple[bool, str]:
+        """
+        Valide une commande.
+        Returns: (est_valide, message)
+        """
+        if level == SecurityLevel.PARANOID:
+            return False, "Mode lecture seule uniquement"
+        
+        # Check blocked commands
+        if command in self.config.BLOCKED_COMMANDS:
+            return False, "Commande explicitement bloquée"
+        
+        # Check patterns
+        for pattern in self.blocked_patterns:
+            if re.search(pattern, command, re.IGNORECASE):
+                return False, f"Pattern dangereux détecté: {pattern}"
+        
+        return True, "Commande autorisée"
+    
+    def sanitize_path(self, path: str, base_dir: Optional[str] = None) -> str:
+        """Sécurise chemin."""
+        if base_dir:
+            base = Path(base_dir).resolve()
+            target = Path(path).resolve()
+            
+            try:
+                target.relative_to(base)
+                return str(target)
+            except ValueError:
+                raise ValueError(f"Chemin hors base: {path}")
+        return path
+
+# ══════════════════════════════════════════════════════════════════════════════
+# BASE DES TERMINALS
+# ══════════════════════════════════════════════════════════════════════════════
+
+class BaseTerminal(ABC):
+    """Interface abstraite pour terminaux."""
+    
+    def __init__(self, config: TerminalConfig, logger: NexusLogger):
+        self.config = config
+        self.logger = logger
+        self.security = SecurityValidator(config)
+    
+    @abstractmethod
+    def execute(self, command: str, **kwargs) -> CommandResult:
+        """Exécute une commande."""
+        pass
+    
+    @abstractmethod
+    def get_capabilities(self) -> Dict[str, Any]:
+        """Retourne les capacités."""
+        pass
+
+# ══════════════════════════════════════════════════════════════════════════════
+# TERMINAL BASH/LINUX
+# ══════════════════════════════════════════════════════════════════════════════
+
+class BashTerminal(BaseTerminal):
+    """Terminal Bash natif."""
+    
+    def execute(self, command: str, timeout: Optional[int] = None) -> CommandResult:
+        """Exécute commande Bash."""
+        timeout = timeout or self.config.DEFAULT_TIMEOUT
+        result = CommandResult(command=command, shell_type=ShellType.BASH)
+        
+        # Validation sécurité
+        is_valid, msg = self.security.validate(command, SecurityLevel.MEDIUM)
+        if not is_valid:
+            result.blocked = True
+            result.stderr = f"Sécurité: {msg}"
+            result.exit_code = 1
+            self.logger.audit(f"BLOCAGE: {command}")
+            return result
+        
+        start = time.time()
+        self.logger.debug(f"[BASH] $ {command}")
+        
+        try:
+            proc = subprocess.Popen(
+                command,
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            result.pid = proc.pid
+            
+            try:
+                stdout, stderr = proc.communicate(timeout=timeout)
+                result.stdout = stdout[:self.config.MAX_OUTPUT_SIZE]
+                result.stderr = stderr[:self.config.MAX_OUTPUT_SIZE]
+                result.exit_code = proc.returncode
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                result.timeout = True
+                result.stderr = f"Timeout après {timeout}s"
+                result.exit_code = 124
+        
+        except Exception as e:
+            result.stderr = f"Erreur Bash: {str(e)}"
+            result.exit_code = 1
+            self.logger.error(f"[BASH ERROR] {e}")
+        
+        result.duration_ms = (time.time() - start) * 1000
+        self.logger.info(f"[BASH] {result.output_summary}")
+        
+        return result
+    
+    def get_capabilities(self) -> Dict[str, Any]:
+        return {
+            "shell": "bash",
+            "platform": "linux/mac",
+            "features": ["pipes", "redirection", "background", "jobs"]
+        }
+
+# ═════════════───────────────────────────────────────────────────────────────
+# TERMINAL POWERSHELL
+# ══════════════════════════════════════════════════════════════════════════════
+
+class PowerShellTerminal(BaseTerminal):
+    """Terminal PowerShell Windows."""
+    
+    def execute(self, command: str, timeout: Optional[int] = None) -> CommandResult:
+        """Exécute commande PowerShell."""
+        timeout = timeout or self.config.DEFAULT_TIMEOUT
+        result = CommandResult(command=command, shell_type=ShellType.POWERSHELL)
+        
+        if not self._is_windows():
+            result.stderr = "PowerShell disponible uniquement sur Windows"
+            result.exit_code = 127
+            return result
+        
+        start = time.time()
+        
+        try:
+            proc = subprocess.Popen(
+                ["powershell", "-Command", command],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            
+            try:
+                stdout, stderr = proc.communicate(timeout=timeout)
+                result.stdout = stdout[:self.config.MAX_OUTPUT_SIZE]
+                result.stderr = stderr[:self.config.MAX_OUTPUT_SIZE]
+                result.exit_code = proc.returncode
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                result.timeout = True
+                result.stderr = f"Timeout PowerShell après {timeout}s"
+                result.exit_code = 124
+                
+        except FileNotFoundError:
+            result.stderr = "PowerShell non trouvé"
+            result.exit_code = 127
+        except Exception as e:
+            result.stderr = f"Erreur PowerShell: {str(e)}"
+            result.exit_code = 1
+        
+        result.duration_ms = (time.time() - start) * 1000
+        return result
+    
+    def _is_windows(self) -> bool:
+        return platform.system() == "Windows"
+    
+    def get_capabilities(self) -> Dict[str, Any]:
+        return {
+            "shell": "powershell",
+            "platform": "windows",
+            "version": self._get_ps_version()
+        }
+    
+    def _get_ps_version(self) -> str:
+        try:
+            result = self.execute("$PSVersionTable.PSVersion.ToString()", timeout=5)
+            return result.stdout.strip() if result.success else "unknown"
+        except:
+            return "unknown"
+
+# ══════════════════════════════════════════════════════════════════════════════
+# TERMINAL DOCKER
+# ══════════════════════════════════════════════════════════════════════════════
+
+class DockerTerminal(BaseTerminal):
+    """Terminal Docker container."""
+    
+    def __init__(self, config: TerminalConfig, logger: NexusLogger):
+        super().__init__(config, logger)
+        self.client = None
+        self._init_docker_client()
+    
+    def _init_docker_client(self):
+        """Initialise client Docker."""
+        if not DOCKER_AVAILABLE:
+            self.logger.warning("Docker SDK non installé")
+            return
+        
+        try:
+            self.client = docker.from_env()
+            self.logger.info("Client Docker initialisé")
+        except Exception as e:
+            self.logger.error(f"Docker unavailable: {e}")
+    
+    def execute(self, command: str, 
+                container: str = None,
+                timeout: Optional[int] = None) -> CommandResult:
+        """Exécute dans container Docker."""
+        container = container or self.config.DEFAULT_CONTAINER
+        timeout = timeout or self.config.DEFAULT_TIMEOUT
+        result = CommandResult(
+            command=command, 
+            shell_type=ShellType.DOCKER,
+            exit_code=1
+        )
+        
+        if not self.client:
+            result.stderr = "Docker client non initialisé"
+            return result
+        
+        try:
+            # Pull image
+            pull_result = self._pull_image(container)
+            if not pull_result:
+                result.stderr = f"Impossible de pull {container}"
+                return result
+            
+            start = time.time()
+            
+            # Exécution
+            exec_result = self.client.containers.run(
+                container,
+                command,
+                remove=True,
+                detach=False,
+                network_disabled=False,
+                mem_limit=f"{self.config.CONTAINER_MEMORY_MB}m"
+            )
+            
+            result.stdout = exec_result.decode('utf-8', errors='replace')
+            result.exit_code = 0
+            
+        except docker.errors.NotFound:
+            result.stderr = f"Image {container} non trouvée"
+        except docker.errors.APIError as e:
+            result.stderr = f"Erreur Docker API: {e}"
+        except subprocess.TimeoutExpired:
+            result.timeout = True
+            result.stderr = f"Timeout Docker après {timeout}s"
+        except Exception as e:
+            result.stderr = f"Erreur Docker: {str(e)}"
+        
+        result.duration_ms = (time.time() - start) * 1000
+        return result
+    
+    def _pull_image(self, image: str) -> bool:
+        """Pull image Docker."""
+        try:
+            self.logger.info(f"Pulling {image}...")
+            self.client.images.pull(image)
+            self.logger.info(f"✓ {image} prêt")
+            return True
+        except Exception as e:
+            self.logger.error(f"Pull failed: {e}")
+            return False
+    
+    def get_capabilities(self) -> Dict[str, Any]:
+        return {
+            "engine": "docker",
+            "sandbox": True,
+            "isolated": True,
+            "network": True,
+            "persistence": False
+        }
+
+# ══════════════════════════════════════════════════════════════════════════════
+# TERMINAL SSH
+# ══════════════════════════════════════════════════════════════════════════════
+
+class SSHTerminal(BaseTerminal):
+    """Terminal SSH distant."""
+    
+    def execute(self, host: str, user: str, command: str,
+                key_path: Optional[str] = None,
+                password: Optional[str] = None,
+                timeout: Optional[int] = None) -> CommandResult:
+        """Exécute commande sur serveur distant."""
+        if not PARAMIKO_AVAILABLE:
+            return CommandResult(
+                command=command,
+                stderr="paramiko non installé: pip install paramiko",
+                exit_code=127,
+                shell_type=ShellType.SSH
+            )
+        
+        timeout = timeout or self.config.SSH_TIMEOUT
+        result = CommandResult(
+            command=f"ssh {user}@{host}",
+            shell_type=ShellType.SSH
+        )
+        
+        client = paramiko.SSHClient()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        
+        try:
+            connect_kwargs = {
+                "hostname": host,
+                "username": user,
+                "timeout": timeout
+            }
+            
+            if key_path:
+                connect_kwargs["key_filename"] = key_path
+            elif password:
+                connect_kwargs["password"] = password
+            else:
+                result.stderr = "Clé ou mot de passe requis"
+                result.exit_code = 1
+                return result
+            
+            start = time.time()
+            client.connect(**connect_kwargs)
+            
+            stdin, stdout, stderr = client.exec_command(command, timeout=timeout)
+            
+            result.stdout = stdout.read().decode('utf-8', errors='replace')
+            result.stderr = stderr.read().decode('utf-8', errors='replace')
+            result.exit_code = stdout.channel.recv_exit_status()
+            
+            client.close()
+            
+        except paramiko.AuthenticationException:
+            result.stderr = "Authentification échouée"
+            result.exit_code = 1
+        except paramiko.SSHException as e:
+            result.stderr = f"Erreur SSH: {e}"
+            result.exit_code = 1
+        except socket.timeout:
+            result.timeout = True
+            result.stderr = f"SSH timeout après {timeout}s"
+            result.exit_code = 124
+        except Exception as e:
+            result.stderr = f"Erreur SSH: {str(e)}"
+            result.exit_code = 1
+        
+        result.duration_ms = (time.time() - start) * 1000
+        return result
+    
+    def get_capabilities(self) -> Dict[str, Any]:
+        return {
+            "protocol": "ssh",
+            "remote": True,
+            "auth_methods": ["key", "password"],
+            "encrypted": True
+        }
+
+# ══════════════════════════════════════════════════════════════════════════════
+# TERMINAL PYTHON SANDBOX
+# ══════════════════════════════════════════════════════════════════════════════
+
+class PythonSandboxTerminal(BaseTerminal):
+    """Sandbox Python sécurisée."""
+    
+    RESTRICTED_BUILTINS = ['eval', 'exec', 'compile', '__import__', 
+                          'open', 'input', 'raw_input']
+    
+    def execute(self, code: str, timeout: Optional[int] = None) -> CommandResult:
+        """Exécute code Python."""
+        timeout = timeout or 30
+        result = CommandResult(
+            command=code[:100] + "..." if len(code) > 100 else code,
+            shell_type=ShellType.PYTHON
+        )
+        
+        start = time.time()
+        
+        # Création environnement sécurisé
+        safe_globals = {
+            '__builtins__': self._get_safe_builtins(),
+            '__name__': '__main__',
+            '__doc__': None,
+            '__package__': None
+        }
+        
+        safe_locals = {}
+        
+        try:
+            # Compilation
+            compiled = compile(code, '<sandbox>', 'exec')
+            
+            # Exécution avec timeout thread
+            output_queue = Queue()
+            
+            def run_code():
+                old_stdout = sys.stdout
+                sys.stdout = output_capture = StringIO()
+                
+                try:
+                    exec(compiled, safe_globals, safe_locals)
+                    output_queue.put(('success', output_capture.getvalue()))
+                except Exception as e:
+                    output_queue.put(('error', str(e)))
+                finally:
+                    sys.stdout = old_stdout
+            
+            thread = threading.Thread(target=run_code)
+            thread.daemon = True
+            thread.start()
+            thread.join(timeout=timeout)
+            
+            if thread.is_alive():
+                result.timeout = True
+                result.stderr = f"Python timeout après {timeout}s"
+                result.exit_code = 124
+            else:
+                try:
+                    status, output = output_queue.get_nowait()
+                    if status == 'success':
+                        result.stdout = output
+                        result.exit_code = 0
+                    else:
+                        result.stderr = output
+                        result.exit_code = 1
+                except Empty:
+                    result.stderr = "Exécution bloquée"
+                    result.exit_code = 1
+        
+        except SyntaxError as e:
+            result.stderr = f"SyntaxError: {e}"
+            result.exit_code = 1
+        except Exception as e:
+            result.stderr = f"Erreur Python: {str(e)}"
+            result.exit_code = 1
+        
+        result.duration_ms = (time.time() - start) * 1000
+        return result
+    
+    def _get_safe_builtins(self) -> Dict[str, Any]:
+        """Builtins sécurisés."""
+        import builtins
+        
+        safe = {}
+        for name in dir(builtins):
+            if name not in self.RESTRICTED_BUILTINS:
+                obj = getattr(builtins, name)
+                if callable(obj) or isinstance(obj, (int, str, list, dict)):
+                    safe[name] = obj
+        return safe
+    
+    def get_capabilities(self) -> Dict[str, Any]:
+        return {
+            "language": "python",
+            "sandbox": True,
+            "restricted_builtins": self.RESTRICTED_BUILTINS,
+            "timeout": 30
+        }
+
+# ══════════════════════════════════════════════════════════════════════════════
+# TERMINAL GIT
+# ══════════════════════════════════════════════════════════════════════════════
+
+class GitTerminal(BaseTerminal):
+    """Terminal Git opérations."""
+    
+    def execute(self, command: str, repo_path: Optional[str] = None,
+                timeout: Optional[int] = None) -> CommandResult:
+        """Exécute commande Git."""
+        full_cmd = f"git {command}"
+        return self._execute_git(full_cmd, repo_path, timeout)
+    
+    def clone(self, url: str, destination: Optional[str] = None) -> CommandResult:
+        """Clone repository."""
+        cmd = f"clone {url}"
+        if destination:
+            cmd += f" {destination}"
+        return self.execute(cmd)
+    
+    def commit(self, message: str, repo_path: Optional[str] = None) -> CommandResult:
+        """Commit."""
+        return self.execute(f'commit -m "{message}"', repo_path)
+    
+    def push(self, remote: str = "origin", branch: str = "main",
+             repo_path: Optional[str] = None) -> CommandResult:
+        """Push."""
+        return self.execute(f"push {remote} {branch}", repo_path)
+    
+    def pull(self, remote: str = "origin", branch: str = "main",
+             repo_path: Optional[str] = None) -> CommandResult:
+        """Pull."""
+        return self.execute(f"pull {remote} {branch}", repo_path)
+    
+    def _execute_git(self, command: str, repo_path: Optional[str] = None,
+                     timeout: Optional[int] = None) -> CommandResult:
+        """Exécution Git interne."""
+        timeout = timeout or self.config.DEFAULT_TIMEOUT
+        result = CommandResult(
+            command=command,
+            shell_type=ShellType.GIT
+        )
+        
+        cwd = repo_path or "."
+        
+        try:
+            proc = subprocess.Popen(
+                command.split(),
+                cwd=cwd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            
+            stdout, stderr = proc.communicate(timeout=timeout)
+            result.stdout = stdout
+            result.stderr = stderr
+            result.exit_code = proc.returncode
+            
+        except subprocess.TimeoutExpired:
+            result.timeout = True
+            result.stderr = f"Git timeout après {timeout}s"
+            result.exit_code = 124
+        except Exception as e:
+            result.stderr = f"Erreur Git: {str(e)}"
+            result.exit_code = 1
+        
+        return result
+    
+    def get_capabilities(self) -> Dict[str, Any]:
+        return {
+            "vcs": "git",
+            "operations": ["clone", "commit", "push", "pull", "branch", "merge"]
+        }
+
+# ══════════════════════════════════════════════════════════════════════════════
+# TERMINAL HYBRIDE PRINCIPAL
+# ══════════════════════════════════════════════════════════════════════════════
+
+class HybridTerminal:
+    """Terminal hybride multi-environnements."""
+    
+    def __init__(self, config: TerminalConfig = None):
+        self.config = config or TerminalConfig()
+        self.logger = NexusLogger(self.config)
+        self.session = SessionData()
+        
+        # Initialisation terminaux
+        self.terminales: Dict[ShellType, BaseTerminal] = {}
+        self._init_terminals()
+        
+        # Historique
+        self.history: List[CommandResult] = []
+        
+        self.logger.info("🚀 Terminal hybride initialisé")
+    
+    def _init_terminals(self):
+        """Initialise tous les terminaux."""
+        self.terminales[ShellType.BASH] = BashTerminal(self.config, self.logger)
+        self.terminales[ShellType.POWERSHELL] = PowerShellTerminal(self.config, self.logger)
+        self.terminales[ShellType.DOCKER] = DockerTerminal(self.config, self.logger)
+        self.terminales[ShellType.PYTHON] = PythonSandboxTerminal(self.config, self.logger)
+        self.terminales[ShellType.SSH] = SSHTerminal(self.config, self.logger)
+        self.terminales[ShellType.GIT] = GitTerminal(self.config, self.logger)
+        
+        self.logger.info(f"{len(self.terminales)} terminaux initialisés")
+    
+    def execute(self, command: str, shell_type: ShellType = ShellType.BASH,
+                **kwargs) -> CommandResult:
+        """Exécute commande sur terminal spécifié."""
+        self.session.commands_executed += 1
+        
+        terminal = self.terminales.get(shell_type)
+        if not terminal:
+            return CommandResult(
+                command=command,
+                stderr=f"Terminal {shell_type.name} non disponible",
+                exit_code=1
+            )
+        
+        # Exécution
+        result = terminal.execute(command, **kwargs)
+        
+        # Enregistrement historique
+        self.history.append(result)
+        if len(self.history) > self.config.COMMAND_HISTORY_SIZE:
+            self.history.pop(0)
+        
+        # Statistiques
+        if not result.success:
+            self.session.failed_commands += 1
+        
+        self.session.total_duration_ms += result.duration_ms
+        
+        return result
+    
+    def execute_bash(self, command: str, **kwargs) -> CommandResult:
+        """Raccourci Bash."""
+        return self.execute(command, ShellType.BASH, **kwargs)
+    
+    def execute_powershell(self, command: str, **kwargs) -> CommandResult:
+        """Raccourci PowerShell."""
+        return self.execute(command, ShellType.POWERSHELL, **kwargs)
+    
+    def execute_docker(self, command: str, **kwargs) -> CommandResult:
+        """Raccourci Docker."""
+        return self.execute(command, ShellType.DOCKER, **kwargs)
+    
+    def execute_python(self, code: str, **kwargs) -> CommandResult:
+        """Raccourci Python."""
+        return self.execute(code, ShellType.PYTHON, **kwargs)
+    
+    def execute_ssh(self, host: str, user: str, command: str, **kwargs) -> CommandResult:
+        """Raccourci SSH."""
+        return self.terminales[ShellType.SSH].execute(host, user, command, **kwargs)
+    
+    def get_session_stats(self) -> Dict[str, Any]:
+        """Statistiques session."""
+        return {
+            "session_id": self.session.session_id,
+            "duration_seconds": (datetime.now() - self.session.start_time).total_seconds(),
+            "commands_executed": self.session.commands_executed,
+            "failed_commands": self.session.failed_commands,
+            "avg_duration_ms": self.session.total_duration_ms / max(1, self.session.commands_executed),
+            "success_rate": (1 - self.session.failed_commands / max(1, self.session.commands_executed)) * 100
+        }
+    
+    def export_history(self, format: str = "json") -> str:
+        """Export historique."""
+        if format == "json":
+            return json.dumps([h.to_dict() for h in self.history], indent=2)
+        elif format == "text":
+            lines = []
+            for h in self.history:
+                lines.append(f"[{h.timestamp}] {h.shell_type.name}: {h.command}")
+                if h.stderr:
+                    lines.append(f"  STDERR: {h.stderr[:100]}")
+            return "\n".join(lines)
+        return ""
+    
+    def cleanup(self):
+        """Nettoyage ressources."""
+        self.logger.info("Nettoyage terminal...")
+        # Fermeture éventuelle clients
+
+# ══════════════════════════════════════════════════════════════════════════════
+# INTERFACE UTILISATEUR INTERACTIVE
+# ══════════════════════════════════════════════════════════════════════════════
+
+class InteractiveCLI:
+    """Interface CLI interactive."""
+    
+    PROMPT = f"{Fore.CYAN}nexus{Style.RESET_ALL}@terminal{Style.RESET_ALL}$ "
+    
+    def __init__(self, terminal: HybridTerminal):
+        self.terminal = terminal
+        self.running = True
+        
+        self.banner()
+    
+    def banner(self):
+        """Affiche bannière."""
+        banner = f"""
+{Fore.MAGENTA}╔══════════════════════════════════════════════════════════════╗
+║  NEXUS INTELLIGENT TERMINAL v2.0                           ║
+║  AI-Powered Multi-Environment Shell                       ║
+╚══════════════════════════════════════════════════════════════╝{Style.RESET_ALL}
+
+{Fore.YELLOW}Terminaux disponibles:{Style.RESET_ALL}
+  • bash      - Linux/Mac native
+  • powershell- Windows PowerShell  
+  • docker    - Isolated containers
+  • ssh       - Remote servers
+  • python    - Sandboxed execution
+  • git       - Version control
+
+{Fore.GREEN}Tapez 'help' pour la liste des commandes{Style.RESET_ALL}
+{'='*60}
+"""
+        print(banner)
+    
+    def run(self):
+        """Boucle principale."""
+        while self.running:
+            try:
+                if COLORAMA_AVAILABLE:
+                    user_input = input(self.PROMPT)
+                else:
+                    user_input = input(self.PROMPT.replace(Fore.CYAN, "").replace(Style.RESET_ALL, ""))
+                
+                user_input = user_input.strip()
+                
+                if not user_input:
+                    continue
+                
+                self.process_command(user_input)
+                
+            except KeyboardInterrupt:
+                print(f"\n{Fore.YELLOW}Arrêt... Appuyez à nouveau pour quitter{Style.RESET_ALL}")
+            except EOFError:
+                self.running = False
+            except Exception as e:
+                print(f"{Fore.RED}Erreur: {e}{Style.RESET_ALL}")
+        
+        self.cleanup()
+    
+    def process_command(self, cmd: str):
+        """Traite commande utilisateur."""
+        parts = cmd.split(maxsplit=1)
+        command = parts[0].lower()
+        args = parts[1] if len(parts) > 1 else ""
+        
+        handlers = {
+            'bash': lambda: self.terminal.execute_bash(args),
+            'ps': lambda: self.terminal.execute_powershell(args),
+            'powershell': lambda: self.terminal.execute_powershell(args),
+            'docker': lambda: self.terminal.execute_docker(args),
+            'python': lambda: self.terminal.execute_python(args),
+            'py': lambda: self.terminal.execute_python(args),
+            'git': lambda: self.terminal.execute(args, ShellType.GIT),
+            'stats': self.show_stats,
+            'history': self.show_history,
+            'help': self.show_help,
+            'clear': self.clear_screen,
+            'exit': self.quit,
+            'quit': self.quit,
+            '?': self.show_help,
+            'h': self.show_help
+        }
+        
+        handler = handlers.get(command)
+        if handler:
+            result = handler()
+            if result and isinstance(result, CommandResult):
+                self.display_result(result)
+        else:
+            # Essai direct bash
+            print(f"{Fore.YELLOW}Commande inconnue. Tentative bash...{Style.RESET_ALL}")
+            result = self.terminal.execute_bash(cmd)
+            self.display_result(result)
+    
+    def display_result(self, result: CommandResult):
+        """Affiche résultat."""
+        print()
+        
+        if result.blocked:
+            print(f"{Fore.RED}⛔ {result.stderr}{Style.RESET_ALL}")
+        elif result.timeout:
+            print(f"{Fore.YELLOW}⏱️ {result.stderr}{Style.RESET_ALL}")
+        elif result.exit_code != 0:
+            print(f"{Fore.RED}❌ Exit {result.exit_code}{Style.RESET_ALL}")
+        else:
+            print(f"{Fore.GREEN}✅ {Style.RESET_ALL}", end="")
+        
+        if result.stdout:
+            print(result.stdout)
+        
+        if result.stderr and not result.blocked:
+            print(f"{Fore.RED}STDERR: {result.stderr}{Style.RESET_ALL}")
+        
+        print(f"{Fore.DIM}[{result.duration_ms:.0f}ms] exit={result.exit_code}{Style.RESET_ALL}")
+        print()
+    
+    def show_stats(self):
+        """Affiche statistiques."""
+        stats = self.terminal.get_session_stats()
+        print(f"""
+{Fore.CYAN}=== STATISTIQUES SESSION ==={Style.RESET_ALL}
+Session ID: {stats['session_id']}
+Durée: {stats['duration_seconds']:.1f}s
+Commandes: {stats['commands_executed']}
+Échecs: {stats['failed_commands']}
+Succès: {stats['success_rate']:.1f}%
+Temps moyen: {stats['avg_duration_ms']:.1f}ms
+""")
+    
+    def show_history(self, limit: int = 10):
+        """Affiche historique."""
+        history = self.terminal.history[-limit:]
+        print(f"\n{Fore.CYAN}=== HISTORIQUE (dernières {len(history)}) ==={Style.RESET_ALL}")
+        for i, h in enumerate(reversed(history), 1):
+            marker = "✓" if h.success else "✗"
+            print(f"{i}. [{marker}] {h.shell_type.name}: {h.command[:60]}")
+        print()
+    
+    def show_help(self):
+        """Affiche aide."""
+        help_text = f"""
+{Fore.CYAN}=== COMMANDES DISPONIBLES ==={Style.RESET_ALL}
+
+{Fore.GREEN}Exécution:{Style.RESET_ALL}
+  bash <cmd>       Exécute sous Bash/Linux
+  ps <cmd>         Exécute sous PowerShell
+  docker <cmd>     Exécute dans container Docker
+  py <code>        Exécute code Python sandbox
+  git <cmd>        Commandes Git
+
+{Fore.GREEN}Utilité:{Style.RESET_ALL}
+  stats            Statistiques session
+  history          Voir historique
+  clear            Effacer écran
+  help             Cette aide
+  exit/quit        Quitter
+
+{Fore.YELLOW}Exemples:{Style.RESET_ALL}
+  bash ls -la
+  docker echo hello
+  py print(2+2)
+  ps Get-Process
+"""
+        print(help_text)
+    
+    def clear_screen(self):
+        """Efface écran."""
+        os.system('cls' if platform.system() == 'Windows' else 'clear')
+    
+    def quit(self):
+        """Quitte."""
+        self.running = False
+        print(f"\n{Fore.GREEN}👋 À bientôt, nexus!{Style.RESET_ALL}")
+        self.terminal.cleanup()
+    
+    def cleanup(self):
+        """Nettoyage."""
+        self.terminal.cleanup()
+
+# ══════════════════════════════════════════════════════════════════════════════
+# FONCTIONS UTILITAIRES
+# ══════════════════════════════════════════════════════════════════════════════
+
+def generate_jwt_secret(key_size: int = 32) -> str:
+    """Génère secret JWT."""
+    return secrets.token_hex(key_size)
+
+def hash_command(cmd: str) -> str:
+    """Hash commande pour audit."""
+    return hashlib.sha256(cmd.encode()).hexdigest()[:16]
+
+def create_timestamp_blockchain() -> str:
+    """Crée timestamp blockchain simulé."""
+    timestamp = datetime.now().isoformat()
+    nonce = secrets.token_hex(8)
+    data = f"{timestamp}:{nonce}"
+    return hashlib.sha256(data.encode()).hexdigest()
+
+# ══════════════════════════════════════════════════════════════════════════════
+# POINT D'ENTRÉE
+# ══════════════════════════════════════════════════════════════════════════════
+
+def main():
+    """Point d'entrée principal."""
+    parser = argparse.ArgumentParser(
+        description="Nexus Intelligent Terminal v2.0",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Exemples:
+  python terminal.py --interactive
+  python terminal.py --test
+  python terminal.py --config config.json
+        """
+    )
+    
+    parser.add_argument(
+        '--interactive', '-i',
+        action='store_true',
+        help='Mode interactif'
+    )
+    
+    parser.add_argument(
+        '--test', '-t',
+        action='store_true',
+        help='Lancer tests'
+    )
+    
+    parser.add_argument(
+        '--config', '-c',
+        type=str,
+        help='Fichier configuration JSON'
+    )
+    
+    parser.add_argument(
+        '--quiet', '-q',
+        action='store_true',
+        help='Mode silencieux'
+    )
+    
+    args = parser.parse_args()
+    
+    # Chargement config
+    config = TerminalConfig()
+    if args.config and os.path.exists(args.config):
+        with open(args.config) as f:
+            custom_config = json.load(f)
+            for k, v in custom_config.items():
+                if hasattr(config, k):
+                    setattr(config, k, v)
+    
+    # Initialisation terminal
+    terminal = HybridTerminal(config)
+    
+    if args.test:
+        run_tests(terminal)
+    elif args.interactive:
+        InteractiveCLI(terminal).run()
+    else:
+        # Par défaut : démo
+        run_demo(terminal)
+    
+    terminal.cleanup()
+
+def run_tests(terminal: HybridTerminal):
+    """Lance tests."""
+    print(f"{Fore.CYAN}=== TESTS TERMINAL ==={Style.RESET_ALL}\n")
+    
+    tests = [
+        ("bash ls -la", ShellType.BASH),
+        ("bash pwd", ShellType.BASH),
+        ("py print('Hello Nexus')", ShellType.PYTHON),
+        ("echo test", ShellType.BASH),
+    ]
+    
+    passed = 0
+    failed = 0
+    
+    for cmd, shell in tests:
+        result = terminal.execute(cmd, shell)
+        status = "✓" if result.success else "✗"
+        print(f"{status} {cmd}")
+        if result.success:
+            passed += 1
+        else:
+            failed += 1
+            print(f"  Erreur: {result.stderr[:50]}")
+    
+    print(f"\n{passed}/{passed+failed} tests passés")
+
+def run_demo(terminal: HybridTerminal):
+    """Démo automatique."""
+    print(f"{Fore.CYAN}=== DÉMO NEXUS TERMINAL ==={Style.RESET_ALL}\n")
+    
+    demos = [
+        ("ls -la", ShellType.BASH, "Listing fichiers"),
+        ("pwd", ShellType.BASH, "Répertoire actuel"),
+        ("echo 'Hello from Nexus'", ShellType.BASH, "Message"),
+        ("print('Python sandbox works!')", ShellType.PYTHON, "Python"),
+    ]
+    
+    for cmd, shell, desc in demos:
+        print(f"[{desc}]")
+        result = terminal.execute(cmd, shell)
+        print(f"  → {result.output_summary}")
+        if result.stdout:
+            print(f"  {result.stdout.strip()[:100]}")
+        print()
+    
+    # Stats
+    stats = terminal.get_session_stats()
+    print(f"{Fore.CYAN}Session stats:{Style.RESET_ALL}")
+    for k, v in stats.items():
+        print(f"  {k}: {v}")
+
+if __name__ == "__main__":
+    main()
