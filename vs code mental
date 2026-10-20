@@ -1,0 +1,811 @@
+#!/usr/bin/env python3# -*- coding: utf-8 -*-
+"""
+╔══════════════════════════════════════════════════════════════════════════════╗
+║ 📝 MENTAL CODE EDITOR (MCE) — Éditeur de Code pour IA ║
+║ Gestion de buffers, AST, Regex, Mini-Git, VFS RAM ║
+║ Auteur : Aissa Mohammedi (DGK) ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+"""
+
+import os
+import re
+import ast
+import time
+import uuid
+import hashlib
+import difflib
+from typing import Dict, List, Optional, Tuple
+from dataclasses import dataclass, field
+from enum import Enum
+
+# ══════════════════════════════════════════════════════════════════════════════
+# TYPES DE BASE
+# ══════════════════════════════════════════════════════════════════════════════
+
+class BufferState(Enum):
+UNMODIFIED = "unmodified"
+MODIFIED = "modified"
+SAVED = "saved"
+
+@dataclass
+class Buffer:
+"""Un onglet d'édition"""
+id: str = field(default_factory=lambda: str(uuid.uuid4())[:8])
+path: str = ""
+content: str = ""
+state: BufferState = BufferState.UNMODIFIED
+cursor_line: int = 0
+cursor_col: int = 0
+language: str = "text"
+original_content: str = ""
+
+def __post_init__(self):
+if not self.original_content:
+self.original_content = self.content
+
+@property
+def is_modified(self) -> bool:
+return self.content != self.original_content
+
+@property
+def line_count(self) -> int:
+return len(self.content.split("\n"))
+
+def get_lines(self) -> List[str]:
+return self.content.split("\n")
+
+def get_line(self, line_num: int) -> str:
+lines = self.get_lines()
+if 0 <= line_num < len(lines):
+return lines[line_num]
+return ""
+
+def set_line(self, line_num: int, text: str) -> bool:
+lines = self.get_lines()
+if 0 <= line_num < len(lines):
+lines[line_num] = text
+self.content = "\n".join(lines)
+self.state = BufferState.MODIFIED
+return True
+return False
+
+def insert_text(self, line: int, col: int, text: str) -> bool:
+lines = self.get_lines()
+if not (0 <= line < len(lines)):
+return False
+lines[line] = lines[line][:col] + text + lines[line][col:]
+self.content = "\n".join(lines)
+self.state = BufferState.MODIFIED
+return True
+
+def delete_line(self, line_num: int) -> bool:
+lines = self.get_lines()
+if 0 <= line_num < len(lines):
+del lines[line_num]
+self.content = "\n".join(lines)
+self.state = BufferState.MODIFIED
+return True
+return False
+
+def get_hash(self) -> str:
+return hashlib.sha256(self.content.encode()).hexdigest()[:12]
+
+
+@dataclass
+class DiffResult:
+"""Résultat d'un diff"""
+added: List[str]
+removed: List[str]
+changed: List[Tuple[str, str]]
+
+def to_dict(self):
+return {
+"added": len(self.added),
+"removed": len(self.removed),
+"changed": len(self.changed),
+"added_lines": self.added,
+"removed_lines": self.removed,
+}
+
+
+@dataclass
+class ASTAnalysis:
+"""Résultat d'une analyse AST"""
+valid: bool
+functions: List[str]
+classes: List[str]
+imports: List[str]
+variables: List[str]
+errors: List[str]
+warnings: List[str]
+
+def to_dict(self):
+return {
+"valid": self.valid,
+"functions": self.functions,
+"classes": self.classes,
+"imports": self.imports,
+"variables": self.variables,
+"errors": self.errors,
+"warnings": self.warnings,
+}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# MOTEUR DE BUFFER (GESTION DES ONGLETS)
+# ══════════════════════════════════════════════════════════════════════════════
+
+class BufferManager:
+"""Gestionnaire d'onglets d'édition"""
+
+def __init__(self):
+self.buffers: Dict[str, Buffer] = {}
+self.active_buffer_id: Optional[str] = None
+
+def open(self, path: str, content: str = "", language: str = "text") -> Buffer:
+"""Ouvre un fichier dans un nouveau buffer"""
+buf = Buffer(path=path, content=content, language=language)
+self.buffers[buf.id] = buf
+self.active_buffer_id = buf.id
+return buf
+
+def close(self, buffer_id: str) -> bool:
+"""Ferme un buffer"""
+if buffer_id in self.buffers:
+del self.buffers[buffer_id]
+if self.active_buffer_id == buffer_id:
+self.active_buffer_id = next(iter(self.buffers), None)
+return True
+return False
+
+def get_active(self) -> Optional[Buffer]:
+"""Retourne le buffer actif"""
+if self.active_buffer_id:
+return self.buffers.get(self.active_buffer_id)
+return None
+
+def set_active(self, buffer_id: str) -> bool:
+"""Change le buffer actif"""
+if buffer_id in self.buffers:
+self.active_buffer_id = buffer_id
+return True
+return False
+
+def list_buffers(self) -> List[Dict]:
+"""Liste tous les buffers ouverts"""
+return [
+{
+"id": buf.id,
+"path": buf.path,
+"language": buf.language,
+"modified": buf.is_modified,
+"lines": buf.line_count,
+"active": buf.id == self.active_buffer_id,
+}
+for buf in self.buffers.values()
+]
+
+def save(self, buffer_id: str) -> bool:
+"""Marque un buffer comme sauvegardé"""
+buf = self.buffers.get(buffer_id)
+if buf:
+buf.original_content = buf.content
+buf.state = BufferState.SAVED
+return True
+return False
+
+def save_all(self) -> int:
+"""Sauvegarde tous les buffers"""
+count = 0
+for buf_id in self.buffers:
+if self.save(buf_id):
+count += 1
+return count
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# ANALYSEUR AST
+# ══════════════════════════════════════════════════════════════════════════════
+
+class ASTEngine:
+"""Analyseur syntaxique Python"""
+
+@staticmethod
+def analyze(code: str) -> ASTAnalysis:
+"""Analyse complète du code Python"""
+result = ASTAnalysis(
+valid=True, functions=[], classes=[], imports=[],
+variables=[], errors=[], warnings=[]
+)
+
+try:
+tree = ast.parse(code)
+except SyntaxError as e:
+result.valid = False
+result.errors.append(f"SyntaxError ligne {e.lineno}: {e.msg}")
+return result
+except Exception as e:
+result.valid = False
+result.errors.append(f"Erreur de parsing: {e}")
+return result
+
+for node in ast.walk(tree):
+if isinstance(node, ast.FunctionDef) or isinstance(node, ast.AsyncFunctionDef):
+result.functions.append(node.name)
+elif isinstance(node, ast.ClassDef):
+result.classes.append(node.name)
+elif isinstance(node, ast.Import):
+for n in node.names:
+result.imports.append(n.name)
+elif isinstance(node, ast.ImportFrom):
+if node.module:
+result.imports.append(node.module)
+elif isinstance(node, ast.Assign):
+for target in node.targets:
+if isinstance(target, ast.Name):
+result.variables.append(target.id)
+
+# Détection de code dangereux
+if isinstance(node, ast.Call):
+func_name = ""
+if isinstance(node.func, ast.Name):
+func_name = node.func.id
+elif isinstance(node.func, ast.Attribute):
+func_name = node.func.attr
+
+if func_name in ("eval", "exec"):
+result.warnings.append(f"Appel dangereux: {func_name}() ligne {node.lineno}")
+elif func_name in ("system", "popen", "call"):
+result.warnings.append(f"Exécution système: {func_name}() ligne {node.lineno}")
+
+return result
+
+@staticmethod
+def extract_functions(code: str) -> List[Dict]:
+"""Extrait les fonctions avec leur signature"""
+try:
+tree = ast.parse(code)
+except SyntaxError:
+return []
+
+functions = []
+for node in ast.walk(tree):
+if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+args = [a.arg for a in node.args.args]
+functions.append({
+"name": node.name,
+"args": args,
+"line": node.lineno,
+"docstring": ast.get_docstring(node),
+"is_async": isinstance(node, ast.AsyncFunctionDef),
+})
+return functions
+
+@staticmethod
+def extract_classes(code: str) -> List[Dict]:
+"""Extrait les classes avec leurs méthodes"""
+try:
+tree = ast.parse(code)
+except SyntaxError:
+return []
+
+classes = []
+for node in ast.walk(tree):
+if isinstance(node, ast.ClassDef):
+methods = [n.name for n in node.body if isinstance(n, ast.FunctionDef)]
+classes.append({
+"name": node.name,
+"bases": [ast.unparse(b) for b in node.bases],
+"methods": methods,
+"line": node.lineno,
+})
+return classes
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# MOTEUR DE RECHERCHE & REMPLACEMENT
+# ══════════════════════════════════════════════════════════════════════════════
+
+class SearchEngine:
+"""Moteur de recherche et remplacement"""
+
+@staticmethod
+def search(content: str, query: str, regex: bool = False,
+case_sensitive: bool = True) -> List[Dict]:
+"""Recherche dans le contenu"""
+results = []
+lines = content.split("\n")
+
+for i, line in enumerate(lines):
+if regex:
+flags = 0 if case_sensitive else re.IGNORECASE
+try:
+for match in re.finditer(query, line, flags):
+results.append({
+"line": i,
+"col": match.start(),
+"text": line,
+"match": match.group(),
+"length": match.end() - match.start(),
+})
+except re.error:
+pass
+else:
+search_line = line if case_sensitive else line.lower()
+search_query = query if case_sensitive else query.lower()
+start = 0
+while True:
+pos = search_line.find(search_query, start)
+if pos == -1:
+break
+results.append({
+"line": i,
+"col": pos,
+"text": line,
+"match": line[pos:pos + len(query)],
+"length": len(query),
+})
+start = pos + 1
+
+return results
+
+@staticmethod
+def replace(content: str, query: str, replacement: str,
+regex: bool = False, case_sensitive: bool = True,
+count: int = 0) -> Tuple[str, int]:
+"""Remplace dans le contenu"""
+if regex:
+flags = 0 if case_sensitive else re.IGNORECASE
+try:
+if count > 0:
+new_content = re.sub(query, replacement, content, count=count, flags=flags)
+else:
+new_content = re.sub(query, replacement, content, flags=flags)
+num_replaced = len(re.findall(query, content, flags))
+return new_content, num_replaced
+except re.error:
+return content, 0
+else:
+if case_sensitive:
+num = content.count(query)
+if count > 0:
+num = min(num, count)
+new_content = content.replace(query, replacement, count if count > 0 else -1)
+return new_content, num
+else:
+pattern = re.compile(re.escape(query), re.IGNORECASE)
+num = len(pattern.findall(content))
+if count > 0:
+num = min(num, count)
+new_content = pattern.sub(replacement, content, count if count > 0 else 0)
+return new_content, num
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# MINI-GIT (VERSIONING EN MÉMOIRE)
+# ══════════════════════════════════════════════════════════════════════════════
+
+@dataclass
+class Commit:
+"""Un commit dans l'historique"""
+id: str = field(default_factory=lambda: str(uuid.uuid4())[:8])
+hash: str = ""
+message: str = ""
+content: str = ""
+parent: Optional[str] = None
+timestamp: float = field(default_factory=time.time)
+
+
+class MiniGit:
+"""Système de versioning en mémoire"""
+
+def __init__(self):
+self.commits: Dict[str, Commit] = {}
+self.head: Optional[str] = None
+self.branch: str = "main"
+
+def commit(self, content: str, message: str = "Commit automatique") -> Commit:
+"""Crée un commit"""
+c = Commit(
+hash=hashlib.sha256(content.encode()).hexdigest()[:12],
+message=message,
+content=content,
+parent=self.head,
+)
+self.commits[c.id] = c
+self.head = c.id
+return c
+
+def get_current(self) -> Optional[Commit]:
+"""Retourne le commit HEAD"""
+if self.head:
+return self.commits.get(self.head)
+return None
+
+def get_history(self, limit: int = 20) -> List[Dict]:
+"""Retourne l'historique des commits"""
+history = []
+current_id = self.head
+while current_id and len(history) < limit:
+commit = self.commits.get(current_id)
+if not commit:
+break
+history.append({
+"id": commit.id,
+"hash": commit.hash,
+"message": commit.message,
+"timestamp": commit.timestamp,
+})
+current_id = commit.parent
+return history
+
+def diff(self, commit_id_1: str, commit_id_2: str) -> DiffResult:
+"""Diff entre deux commits"""
+c1 = self.commits.get(commit_id_1)
+c2 = self.commits.get(commit_id_2)
+if not c1 or not c2:
+return DiffResult([], [], [])
+
+lines1 = c1.content.split("\n")
+lines2 = c2.content.split("\n")
+
+differ = difflib.Differ()
+diff = list(differ.compare(lines1, lines2))
+
+added, removed, changed = [], [], []
+for line in diff:
+if line.startswith("+ "):
+added.append(line[2:])
+elif line.startswith("- "):
+removed.append(line[2:])
+
+return DiffResult(added, removed, changed)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# ÉDITEUR PRINCIPAL (MCE)
+# ══════════════════════════════════════════════════════════════════════════════
+
+class MentalEditor:
+"""Éditeur de code complet pour IA"""
+
+def __init__(self, vfs=None):
+self.vfs = vfs
+self.buffer_mgr = BufferManager()
+self.ast_engine = ASTEngine()
+self.search_engine = SearchEngine()
+self.git = MiniGit()
+self.opened_at = time.time()
+self.commands_history = []
+
+# ─── Gestion des fichiers ───
+def open_file(self, path: str, language: str = "auto") -> Optional[Buffer]:
+"""Ouvre un fichier depuis le VFS ou crée un nouveau"""
+content = ""
+if self.vfs and self.vfs.exists(path):
+raw = self.vfs.read_file(path)
+if raw:
+content = raw.decode("utf-8", errors="replace")
+
+if language == "auto":
+ext = path.rsplit(".", 1)[-1].lower() if "." in path else ""
+lang_map = {
+"py": "python", "js": "javascript", "ts": "typescript",
+"html": "html", "css": "css", "json": "json",
+"md": "markdown", "txt": "text", "sh": "bash",
+"rs": "rust", "go": "go", "java": "java", "c": "c",
+"cpp": "cpp", "php": "php", "rb": "ruby", "sql": "sql",
+}
+language = lang_map.get(ext, "text")
+
+buf = self.buffer_mgr.open(path, content, language)
+self.git.commit(content, f"Ouverture de {path}")
+return buf
+
+def save_file(self, buffer_id: str = None) -> bool:
+"""Sauvegarde un buffer dans le VFS"""
+if buffer_id is None:
+buf = self.buffer_mgr.get_active()
+else:
+buf = self.buffer_mgr.buffers.get(buffer_id)
+
+if not buf:
+return False
+
+if self.vfs:
+self.vfs.write_file(buf.path, buf.content.encode("utf-8"))
+
+self.buffer_mgr.save(buf.id)
+self.git.commit(buf.content, f"Sauvegarde de {buf.path}")
+return True
+
+# ─── Édition ───
+def write(self, text: str) -> bool:
+"""Écrit du texte dans le buffer actif"""
+buf = self.buffer_mgr.get_active()
+if not buf:
+return False
+buf.content += text
+buf.state = BufferState.MODIFIED
+return True
+
+def replace_all(self, old: str, new: str) -> int:
+"""Remplace tout dans le buffer actif"""
+buf = self.buffer_mgr.get_active()
+if not buf:
+return 0
+new_content, count = self.search_engine.replace(buf.content, old, new)
+buf.content = new_content
+buf.state = BufferState.MODIFIED
+return count
+
+def replace_regex(self, pattern: str, replacement: str) -> int:
+"""Remplacement avec regex"""
+buf = self.buffer_mgr.get_active()
+if not buf:
+return 0
+new_content, count = self.search_engine.replace(
+buf.content, pattern, replacement, regex=True
+)
+buf.content = new_content
+buf.state = BufferState.MODIFIED
+return count
+
+def search(self, query: str, regex: bool = False) -> List[Dict]:
+"""Cherche dans le buffer actif"""
+buf = self.buffer_mgr.get_active()
+if not buf:
+return []
+return self.search_engine.search(buf.content, query, regex)
+
+def goto_line(self, line: int) -> bool:
+"""Va à une ligne spécifique"""
+buf = self.buffer_mgr.get_active()
+if not buf:
+return False
+if 0 <= line < buf.line_count:
+buf.cursor_line = line
+return True
+return False
+
+def insert_at(self, line: int, col: int, text: str) -> bool:
+"""Insère du texte à une position précise"""
+buf = self.buffer_mgr.get_active()
+if not buf:
+return False
+return buf.insert_text(line, col, text)
+
+def delete_line(self, line: int) -> bool:
+"""Supprime une ligne"""
+buf = self.buffer_mgr.get_active()
+if not buf:
+return False
+return buf.delete_line(line)
+
+# ─── Analyse ───
+def analyze(self) -> Optional[ASTAnalysis]:
+"""Analyse le buffer actif"""
+buf = self.buffer_mgr.get_active()
+if not buf or buf.language != "python":
+return None
+return self.ast_engine.analyze(buf.content)
+
+def get_functions(self) -> List[Dict]:
+"""Retourne les fonctions du buffer actif"""
+buf = self.buffer_mgr.get_active()
+if not buf:
+return []
+return self.ast_engine.extract_functions(buf.content)
+
+def get_classes(self) -> List[Dict]:
+"""Retourne les classes du buffer actif"""
+buf = self.buffer_mgr.get_active()
+if not buf:
+return []
+return self.ast_engine.extract_classes(buf.content)
+
+# ─── Git ───
+def git_commit(self, message: str = "Commit") -> Optional[Commit]:
+"""Crée un commit"""
+buf = self.buffer_mgr.get_active()
+if not buf:
+return None
+return self.git.commit(buf.content, message)
+
+def git_history(self, limit: int = 10) -> List[Dict]:
+"""Historique des commits"""
+return self.git.get_history(limit)
+
+def git_diff(self, commit1: str, commit2: str) -> DiffResult:
+"""Diff entre deux commits"""
+return self.git.diff(commit1, commit2)
+
+# ─── Informations ───
+def info(self) -> Dict:
+"""Informations sur l'éditeur"""
+buf = self.buffer_mgr.get_active()
+return {
+"uptime": round(time.time() - self.opened_at, 1),
+"buffers_count": len(self.buffer_mgr.buffers),
+"active_buffer": {
+"id": buf.id if buf else None,
+"path": buf.path if buf else None,
+"language": buf.language if buf else None,
+"lines": buf.line_count if buf else 0,
+"modified": buf.is_modified if buf else False,
+} if buf else None,
+"git_commits": len(self.git.commits),
+"git_head": self.git.head,
+}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# TOOLS POUR IA (OpenAI/Anthropic format)
+# ══════════════════════════════════════════════════════════════════════════════
+
+class MentalEditorTool:
+"""Wrapper pour IA"""
+
+def __init__(self, vfs=None):
+self.editor = MentalEditor(vfs)
+
+@staticmethod
+def get_tool_schema() -> List[Dict]:
+return [
+{
+"type": "function",
+"function": {
+"name": "editor_open",
+"description": "Ouvre un fichier dans l'éditeur mental.",
+"parameters": {
+"type": "object",
+"properties": {
+"path": {"type": "string"},
+"language": {"type": "string", "default": "auto"}
+},
+"required": ["path"]
+}
+}
+},
+{
+"type": "function",
+"function": {
+"name": "editor_save",
+"description": "Sauvegarde le fichier actif.",
+"parameters": {"type": "object", "properties": {}}
+}
+},
+{
+"type": "function",
+"function": {
+"name": "editor_write",
+"description": "Écrit du texte dans le buffer actif.",
+"parameters": {
+"type": "object",
+"properties": {"text": {"type": "string"}},
+"required": ["text"]
+}
+}
+},
+{
+"type": "function",
+"function": {
+"name": "editor_replace",
+"description": "Remplace du texte dans le buffer actif.",
+"parameters": {
+"type": "object",
+"properties": {
+"old": {"type": "string"},
+"new": {"type": "string"},
+"regex": {"type": "boolean", "default": False}
+},
+"required": ["old", "new"]
+}
+}
+},
+{
+"type": "function",
+"function": {
+"name": "editor_analyze",
+"description": "Analyse la syntaxe Python du buffer actif.",
+"parameters": {"type": "object", "properties": {}}
+}
+},
+{
+"type": "function",
+"function": {
+"name": "editor_commit",
+"description": "Crée un commit git.",
+"parameters": {
+"type": "object",
+"properties": {"message": {"type": "string"}},
+"required": ["message"]
+}
+}
+},
+]
+
+def execute_tool(self, name: str, args: Dict) -> Dict:
+if name == "editor_open":
+buf = self.editor.open_file(args["path"], args.get("language", "auto"))
+return {"success": buf is not None, "buffer_id": buf.id if buf else None}
+
+elif name == "editor_save":
+return {"success": self.editor.save_file()}
+
+elif name == "editor_write":
+return {"success": self.editor.write(args["text"])}
+
+elif name == "editor_replace":
+count = self.editor.replace_all(args["old"], args["new"])
+return {"success": count > 0, "replacements": count}
+
+elif name == "editor_analyze":
+result = self.editor.analyze()
+return result.to_dict() if result else {"error": "Buffer non-Python"}
+
+elif name == "editor_commit":
+commit = self.editor.git_commit(args["message"])
+return {"success": commit is not None, "commit_id": commit.id if commit else None}
+
+return {"error": f"Tool inconnu: {name}"}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# DÉMO / CLI
+# ══════════════════════════════════════════════════════════════════════════════
+
+if __name__ == "__main__":
+print("╔══════════════════════════════════════════════════════════════════╗")
+print("║ 📝 MENTAL CODE EDITOR (MCE) — Démo ║")
+print("╚══════════════════════════════════════════════════════════════════╝\n")
+
+editor = MentalEditor()
+
+# Créer un fichier
+print("[1] Ouverture d'un fichier Python...")
+buf = editor.open_file("demo.py", "python")
+print(f" Buffer créé: {buf.id}\n")
+
+# Écrire du code
+print("[2] Écriture de code Python...")
+code = '''def hello(name):
+"""Dit bonjour"""
+return f"Hello {name}"
+
+class Calculator:
+def add(self, a, b):
+return a + b
+'''
+editor.write(code)
+print(f" {buf.line_count} lignes écrites\n")
+
+# Analyse AST
+print("[3] Analyse AST...")
+analysis = editor.analyze()
+if analysis:
+print(f" Valide: {analysis.valid}")
+print(f" Fonctions: {analysis.functions}")
+print(f" Classes: {analysis.classes}")
+
+# Recherche
+print("\n[4] Recherche de 'def'...")
+results = editor.search("def")
+print(f" {len(results)} occurrences trouvées")
+for r in results[:3]:
+print(f" Ligne {r['line']}: {r['text'][:50]}")
+
+# Remplacement
+print("\n[5] Remplacement 'hello' -> 'salut'...")
+count = editor.replace_all("hello", "salut")
+print(f" {count} remplacements")
+
+# Git commit
+print("\n[6] Git commit...")
+commit = editor.git_commit("Version initiale")
+print(f" Commit: {commit.id} - hash: {commit.hash}")
+
+# Info
+print("\n[7] Informations éditeur:")
+import json
+print(json.dumps(editor.info(), indent=2, ensure_ascii=False))
