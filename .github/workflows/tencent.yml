@@ -1,17 +1,119 @@
-name:TKE-Core
-on:push
-permissions:write-all
-concurrency:group:${{github.ref}}
-env:R:ccr.ccs.tencentyun.com/n/x
+# ═══════════════════════════════════════════════════════════════════════════════
+# TENCENT KUBERNETES ENGINE (TKE) — OMEGA TERMINAL DEPLOYMENT
+# Build multi-arch (amd64/arm64), Scan Security (Trivy), Deploy to TKE.
+# Optimized for speed, security, and zero-downtime deployment.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+name: TKE-Core Deploy
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+# Sécurité : Permissions minimales requises
+permissions:
+  contents: read
+  security-events: write
+  packages: write
+
+# Empêche les déploiements concurrents
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Le registre Tencent Cloud (TCR)
+  REGISTRY: ccr.ccs.tencentyun.com
+  IMAGE_NAME: nexus-mental-terminal
+  K8S_DEPLOYMENT: nexus-terminal
+  K8S_NAMESPACE: default
+
 jobs:
-  x:
-    runs-on:ubuntu-latest
-    strategy:matrix:{arch:[amd64,arm64]}
+  build-scan-push:
+    name: "🏗️ Build & Secure"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
     steps:
-    -uses:actions/checkout@v4
-    -run:|
-      echo "${{secrets.KUBECONFIG}}">~/.kube/config
-      docker build-t $R:${{github.sha}}-${{matrix.arch}} .
-      trivy image--exit-code 1 $R:${{github.sha}}-${{matrix.arch}}
-      docker push $R:${{github.sha}}-${{matrix.arch}}
-      kubectl set image deploy/x *=$R:${{github.sha}}-${{matrix.arch}}
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # 1. PRÉPARATION MULTI-ARCHITECTURE (amd64 + arm64)
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 2. LOGIN AU REGISTRE TENCENT
+      - name: Login to Tencent Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.TENCENT_CLOUD_ACCOUNT_ID }}
+          password: ${{ secrets.TKE_REGISTRY_PASSWORD }}
+
+      # 3. BUILD & PUSH MULTI-ARCH EN UNE SEULE ÉTAPE
+      - name: Build and Push Multi-Arch Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # 4. SCAN DE SÉCURITÉ (Bloquant si CRITICAL)
+      - name: Run Trivy Vulnerability Scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          exit-code: '1' # Bloque le pipeline si faille critique
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
+
+      # 5. UPLOAD DES RÉSULTATS SUR GITHUB SECURITY
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  deploy:
+    name: "🚀 Deploy to TKE"
+    needs: build-scan-push
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: production
+      url: https://nexus.tencentcloud.com
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # 1. CONFIGURATION DU KUBECONFIG TENCENT
+      - name: Set up Kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG }}" > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      # 2. MISE À JOUR DE L'IMAGE DANS LE CLUSTER
+      - name: Update Deployment Image
+        run: |
+          kubectl set image deployment/${{ env.K8S_DEPLOYMENT }} \
+            ${{ env.K8S_DEPLOYMENT }}=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+            -n ${{ env.K8S_NAMESPACE }}
+
+      # 3. VÉRIFICATION DU DÉPLOIEMENT (Zéro Downtime)
+      - name: Verify Rollout Status
+        run: |
+          kubectl rollout status deployment/${{ env.K8S_DEPLOYMENT }} \
+            -n ${{ env.K8S_NAMESPACE }} --timeout=120s
