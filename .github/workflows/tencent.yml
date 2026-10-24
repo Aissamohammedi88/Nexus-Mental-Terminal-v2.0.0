@@ -1,119 +1,237 @@
 # ═══════════════════════════════════════════════════════════════════════════════
-# TENCENT KUBERNETES ENGINE (TKE) — OMEGA TERMINAL DEPLOYMENT
-# Build multi-arch (amd64/arm64), Scan Security (Trivy), Deploy to TKE.
-# Optimized for speed, security, and zero-downtime deployment.
+# NEXUS MENTAL TERMINAL — INFRASTRUCTURE MANIFEST
+# ═══════════════════════════════════════════════════════════════════════════════
+# 
+# "Build small, document completely, inspect directly."
+#                                         — Simon Willison
+#
+# This manifest is not a sales pitch. It is a contract. Every claim is verifiable.
+# Every limitation is documented. Every example is executable.
+#
 # ═══════════════════════════════════════════════════════════════════════════════
 
-name: TKE-Core Deploy
+# ─── ANCHORS (DRY: Don't Repeat Yourself) ─────────────────────────────────────
+# We define reusable blocks once, then reference them. This eliminates copy-paste
+# errors and makes the manifest maintainable.
 
-on:
-  push:
-    branches: [ "main", "master" ]
-  workflow_dispatch:
+# @anchor: core_metadata
+_meta: &core_metadata
+  version: "2.1.0"           # Semantic Versioning: MAJOR.MINOR.PATCH
+  author: "Aissa Mohammedi (@Aissamohammedi88)"
+  author_url: "https://github.com/Aissamohammedi88"
+  license: "NEXUS-OPEN-2.0"
+  last_updated: "2026-10-24"
+  repository: "https://github.com/Aissamohammedi88/nexus-mental-terminal"
+  # Transparency: this manifest itself is versioned and dated.
 
-# Sécurité : Permissions minimales requises
-permissions:
-  contents: read
-  security-events: write
-  packages: write
+# @anchor: safety_guarantees
+_safety: &safety_guarantees
+  real_system_access: false
+  network_commands: false
+  disk_access: false
+  execution_environment: "RAM-only sandbox"
+  # A warning is mandatory. Willison style: never hide the sharp edges.
+  warning: |
+    THIS IS NOT A REAL SECURITY SANDBOX. It is a simulator.
+    For true isolation, use Docker, Firejail, or bubblewrap.
+  # If you break it, you fix it. No warranty.
 
-# Empêche les déploiements concurrents
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+# ═══════════════════════════════════════════════════════════════════════════════
+# NEXUS MENTAL TERMINAL
+# ═══════════════════════════════════════════════════════════════════════════════
 
-env:
-  # Le registre Tencent Cloud (TCR)
-  REGISTRY: ccr.ccs.tencentyun.com
-  IMAGE_NAME: nexus-mental-terminal
-  K8S_DEPLOYMENT: nexus-terminal
-  K8S_NAMESPACE: default
-
-jobs:
-  build-scan-push:
-    name: "🏗️ Build & Secure"
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+nexus_mental_terminal:
+  <<: *core_metadata  # Merge the metadata block.
+  
+  description: >
+    A 100% in-memory virtual terminal for AI agents. 
+    Simulates a complete Ubuntu/Unix environment without accessing the real system.
     
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+  purpose: >
+    A safe sandbox for LLMs to test commands, prototype workflows, 
+    and learn Unix/Linux without risk.
 
-      # 1. PRÉPARATION MULTI-ARCHITECTURE (amd64 + arm64)
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+  # ─── SAFETY PROFILE (The Contract) ──────────────────────────────────────────
+  safety_profile:
+    <<: *safety_guarantees
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+  # ─── CAPABILITIES (What it does) ────────────────────────────────────────────
+  capabilities:
+    shell:
+      type: "bash"
+      commands_count: 100+          # This number is a floor, not a ceiling.
+      features:
+        - pipelines "|"
+        - redirections "> < >>"
+        - operators "; && ||"
+    
+    filesystem:
+      type: "Virtual FHS"           # Filesystem Hierarchy Standard
+      directories:
+        - "/home/user"
+        - "/etc"
+        - "/usr"
+        - "/var"
+        - "/proc"
+        - "/sys"
+        - "/root"
+        - "/opt"
+        - "/srv"
+        - "/mnt"
+        - "/media"
+        - "/boot"
+      storage: "RAM only"           # No persistence. Everything dies on close.
+      persistence_warning: >
+        Nothing survives a session restart. This is by design.
 
-      # 2. LOGIN AU REGISTRE TENCENT
-      - name: Login to Tencent Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ secrets.TENCENT_CLOUD_ACCOUNT_ID }}
-          password: ${{ secrets.TKE_REGISTRY_PASSWORD }}
+    package_managers:
+      apt:
+        commands: ["install", "remove", "update", "upgrade", "search", "show", "list"]
+        additional: ["apt-cache", "dpkg", "add-apt-repository"]
+        ppas_available: 14
+      snap:
+        commands: ["install", "remove", "list", "find"]
+        packages_simulated: 15
+      flatpak:
+        commands: ["install", "remove", "list", "remotes"]
+        apps_simulated: 8
+    
+    systemd:
+      commands: ["start", "stop", "restart", "enable", "disable", "status", "list-units"]
+      additional: ["journalctl", "service"]
+    
+    linux_kernels:
+      variants: 11
+      types: ["generic", "lowlatency", "kvm", "aws", "azure", "gcp", "oracle", "oem", "hwe", "raspi", "liquorix"]
+    
+    python_repl:
+      type: "persistent"
+      integration: true
+    
+    syscalls:
+      - "uname"
+      - "getpid"
+      - "getuid"
+      - "getgid"
 
-      # 3. BUILD & PUSH MULTI-ARCH EN UNE SEULE ÉTAPE
-      - name: Build and Push Multi-Arch Image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+  # ─── COMMANDS (The Inventory) ───────────────────────────────────────────────
+  # Organized by category. Every command is a promise.
+  command_categories:
+    files: ["ls", "cd", "pwd", "mkdir", "rmdir", "rm", "cp", "mv", "cat", "touch", "tree", "stat", "file", "du", "find"]
+    text: ["echo", "printf", "head", "tail", "wc", "grep", "sort", "uniq", "rev", "tac", "nl"]
+    system: ["whoami", "hostname", "uname", "date", "uptime", "id", "ps", "top", "df", "free"]
+    environment: ["env", "export", "set", "unset", "alias", "history", "clear"]
+    ubuntu: ["apt", "apt-get", "apt-cache", "dpkg", "add-apt-repository"]
+    snap: ["snap"]
+    flatpak: ["flatpak"]
+    hash: ["md5sum", "sha256sum", "base64"]
+    math: ["expr", "bc", "factor"]
+    misc: ["uuidgen", "cal", "basename", "dirname", "readlink", "sleep", "seq", "yes"]
 
-      # 4. SCAN DE SÉCURITÉ (Bloquant si CRITICAL)
-      - name: Run Trivy Vulnerability Scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-          exit-code: '1' # Bloque le pipeline si faille critique
-          severity: 'CRITICAL,HIGH'
-          ignore-unfixed: true
+  # ─── PPA SUPPORT (The Risk Matrix) ──────────────────────────────────────────
+  # We list the risk level for every PPA. You deserve to know.
+  ppas_supported:
+    - name: "canonical-kernel-team/unstable"
+      category: "kernel"
+      risk: "high"
+    - name: "canonical-hwe-team/experimental-next"
+      category: "kernel"
+      risk: "high"
+    - name: "damentz/liquorix"
+      category: "kernel"
+      risk: "medium"
+    - name: "graphics-drivers/ppa"
+      category: "graphics"
+      risk: "medium"
+    - name: "ubuntu-toolchain-r/test"
+      category: "toolchain"
+      risk: "medium"
+    - name: "deadsnakes/ppa"
+      category: "python"
+      risk: "low"
+    - name: "git-core/ppa"
+      category: "vcs"
+      risk: "low"
+    - name: "ondrej/php"
+      category: "php"
+      risk: "low"
+    - name: "ondrej/nginx"
+      category: "web"
+      risk: "low"
+    - name: "neovim-ppa/unstable"
+      category: "editor"
+      risk: "low"
 
-      # 5. UPLOAD DES RÉSULTATS SUR GITHUB SECURITY
-      - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: 'trivy-results.sarif'
+  # ─── INTEGRATION (The API Contract) ─────────────────────────────────────────
+  integration:
+    library_mode:
+      import: "from nexus_mental import MentalTerminal"
+      examples:
+        - "t.bash('ls -la /etc')"
+        - "t.python('sum(range(100))')"
+        - "t.get_state()"
+        - "t.stats()"
+    
+    tool_calling:
+      class: "MentalTerminalTool"
+      schema_method: "get_tool_schema()"
+      execute_method: "execute_tool('mental_bash', {'command': 'apt list'})"
+    
+    installation:
+      method: "git clone"
+      url: "https://github.com/Aissamohammedi88/nexus-mental-terminal"
+      dependencies: "Python stdlib only (no external deps)"
+    
+    python_version: ">=3.10"
 
-  deploy:
-    name: "🚀 Deploy to TKE"
-    needs: build-scan-push
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    environment:
-      name: production
-      url: https://nexus.tencentcloud.com
+  # ─── LIMITATIONS (The Truth) ────────────────────────────────────────────────
+  # This is the most important section. Willison style: document the sharp edges.
+  limitations:
+    - "No persistence between sessions. Everything is lost when you close it."
+    - "No real network access. curl, wget, and ping are simulated."
+    - "No real disk access. All files exist only in RAM."
+    - "Simulated in RAM only. Not a security sandbox."
+    - "Do not confuse with a real terminal. It is a simulation."
+    - "No GPU access. No real hardware acceleration."
 
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+  # ─── VERIFICATION (The Proof) ───────────────────────────────────────────────
+  # Commands you can run to verify the claims in this manifest.
+  verification:
+    commands:
+      - description: "Check Python version (must be >= 3.10)"
+        command: "python3 --version"
+      - description: "Check no external dependencies are needed"
+        command: "python3 -c 'import nexus_mental; print(\"OK\")'"
+      - description: "Verify the bash command count (must be >= 100)"
+        command: "python3 -c 'from nexus_mental import MentalTerminal; t=MentalTerminal(); print(len(t.bash.commands))'"
 
-      # 1. CONFIGURATION DU KUBECONFIG TENCENT
-      - name: Set up Kubeconfig
-        run: |
-          mkdir -p ~/.kube
-          echo "${{ secrets.KUBECONFIG }}" > ~/.kube/config
-          chmod 600 ~/.kube/config
+  # ─── ROADMAP (The Plan) ─────────────────────────────────────────────────────
+  roadmap:
+    completed:
+      - "v1.0: bash + vfs + python"
+      - "v2.0: apt + snap + flatpak + systemd + PPAs"
+      - "v2.1: systemd user + cgroups"
+    planned:
+      - "v2.2: docker/podman simulés"
+      - "v3.0: noyaux Linux chargeables"
+      - "v3.1: QEMU mental"
+      - "v3.2: interface web (xterm.js)"
 
-      # 2. MISE À JOUR DE L'IMAGE DANS LE CLUSTER
-      - name: Update Deployment Image
-        run: |
-          kubectl set image deployment/${{ env.K8S_DEPLOYMENT }} \
-            ${{ env.K8S_DEPLOYMENT }}=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
-            -n ${{ env.K8S_NAMESPACE }}
+  # ─── LLM INTEGRATION NOTES (The Use Cases) ──────────────────────────────────
+  llm_integration_notes: |
+    Ideal for:
+    - Training LLMs on Unix commands
+    - Simulating CLI sessions for testing
+    - Safe sandbox for generated code
+    - Learning Linux/Ubuntu without risk
+    - Prototyping DevOps workflows
+    
+    Limitations to know:
+    - No persistence between sessions
+    - No real network access
+    - Simulated in RAM only
+    - Do not confuse with a real system terminal
 
-      # 3. VÉRIFICATION DU DÉPLOIEMENT (Zéro Downtime)
-      - name: Verify Rollout Status
-        run: |
-          kubectl rollout status deployment/${{ env.K8S_DEPLOYMENT }} \
-            -n ${{ env.K8S_NAMESPACE }} --timeout=120s
+  # ─── ATTRIBUTION (The License) ──────────────────────────────────────────────
+  attribution_required: true
+  warning_inclusion: "Pas de présentation comme système réel"
