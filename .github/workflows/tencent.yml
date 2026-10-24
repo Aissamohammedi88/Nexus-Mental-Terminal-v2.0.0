@@ -173,7 +173,7 @@ jobs:
           path: release/
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: v${{ needs.setup.outputs.version }}
           name: "Nexus Terminal IA v${{ needs.setup.outputs.version }}"
