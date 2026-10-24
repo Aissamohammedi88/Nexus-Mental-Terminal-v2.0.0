@@ -1,237 +1,200 @@
 # ═══════════════════════════════════════════════════════════════════════════════
-# NEXUS MENTAL TERMINAL — INFRASTRUCTURE MANIFEST
-# ═══════════════════════════════════════════════════════════════════════════════
-# 
-# "Build small, document completely, inspect directly."
-#                                         — Simon Willison
-#
-# This manifest is not a sales pitch. It is a contract. Every claim is verifiable.
-# Every limitation is documented. Every example is executable.
-#
-# ═══════════════════════════════════════════════════════════════════════════════
+# NEXUS TERMINAL IA — MULTI-PLATFORM RELEASE PIPELINE
+# Build, package, and release the AI Terminal integrator across 3 OS.
+# ══════════════════════════════════════════════════════════════════════════════
+name: Release Nexus Terminal IA
 
-# ─── ANCHORS (DRY: Don't Repeat Yourself) ─────────────────────────────────────
-# We define reusable blocks once, then reference them. This eliminates copy-paste
-# errors and makes the manifest maintainable.
+on:
+  push:
+    tags:
+      - 'v*'   # Déclenché sur les tags de version (ex: v4.0.0)
+  workflow_dispatch:
 
-# @anchor: core_metadata
-_meta: &core_metadata
-  version: "2.1.0"           # Semantic Versioning: MAJOR.MINOR.PATCH
-  author: "Aissa Mohammedi (@Aissamohammedi88)"
-  author_url: "https://github.com/Aissamohammedi88"
-  license: "NEXUS-OPEN-2.0"
-  last_updated: "2026-10-24"
-  repository: "https://github.com/Aissamohammedi88/nexus-mental-terminal"
-  # Transparency: this manifest itself is versioned and dated.
+permissions:
+  contents: write # Nécessaire pour créer la release GitHub
 
-# @anchor: safety_guarantees
-_safety: &safety_guarantees
-  real_system_access: false
-  network_commands: false
-  disk_access: false
-  execution_environment: "RAM-only sandbox"
-  # A warning is mandatory. Willison style: never hide the sharp edges.
-  warning: |
-    THIS IS NOT A REAL SECURITY SANDBOX. It is a simulator.
-    For true isolation, use Docker, Firejail, or bubblewrap.
-  # If you break it, you fix it. No warranty.
+jobs:
+  # ─── JOB 1 : SETUP (Extraction de la version) ─────────────────────────────────
+  # Ce job est inspiré du "setup" de ncnn. Il extrait le numéro de version
+  # du tag Git pour l'injecter dans les binaires et les noms d'archives.
+  setup:
+    name: "🔧 Setup & Extract Version"
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.extract.outputs.VERSION }}
+      short_sha: ${{ steps.extract.outputs.SHORT_SHA }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# NEXUS MENTAL TERMINAL
-# ═══════════════════════════════════════════════════════════════════════════════
+      - name: Extract Version from Tag
+        id: extract
+        run: |
+          # Extrait la version du tag (ex: refs/tags/v4.0.0 -> 4.0.0)
+          VERSION=${GITHUB_REF#refs/tags/v}
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION (Commit: $SHORT_SHA)"
 
-nexus_mental_terminal:
-  <<: *core_metadata  # Merge the metadata block.
-  
-  description: >
-    A 100% in-memory virtual terminal for AI agents. 
-    Simulates a complete Ubuntu/Unix environment without accessing the real system.
-    
-  purpose: >
-    A safe sandbox for LLMs to test commands, prototype workflows, 
-    and learn Unix/Linux without risk.
+  # ─── JOB 2 : BUILD MATRIX (3 OS × 2 Arch = 6 binaires) ──────────────────────
+  # Inspiré de la matrice de ncnn. Chaque combinaison (OS, Arch) compile
+  # le terminal et produit un binaire distinct.
+  build:
+    name: "🏗️ Build (${{ matrix.os }} / ${{ matrix.arch }})"
+    needs: setup
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # --- Linux ---
+          - os: ubuntu-22.04
+            arch: x86_64
+            target: x86_64-unknown-linux-gnu
+            binary_name: nexus-terminal-linux-amd64
+          - os: ubuntu-22.04-arm
+            arch: aarch64
+            target: aarch64-unknown-linux-gnu
+            binary_name: nexus-terminal-linux-arm64
+          
+          # --- macOS ---
+          - os: macos-14
+            arch: x86_64
+            target: x86_64-apple-darwin
+            binary_name: nexus-terminal-macos-amd64
+          - os: macos-14
+            arch: aarch64
+            target: aarch64-apple-darwin
+            binary_name: nexus-terminal-macos-arm64
+          
+          # --- Windows ---
+          - os: windows-2022
+            arch: x86_64
+            target: x86_64-pc-windows-msvc
+            binary_name: nexus-terminal-windows-amd64.exe
+          - os: windows-2022
+            arch: aarch64
+            target: aarch64-pc-windows-msvc
+            binary_name: nexus-terminal-windows-arm64.exe
 
-  # ─── SAFETY PROFILE (The Contract) ──────────────────────────────────────────
-  safety_profile:
-    <<: *safety_guarantees
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-  # ─── CAPABILITIES (What it does) ────────────────────────────────────────────
-  capabilities:
-    shell:
-      type: "bash"
-      commands_count: 100+          # This number is a floor, not a ceiling.
-      features:
-        - pipelines "|"
-        - redirections "> < >>"
-        - operators "; && ||"
-    
-    filesystem:
-      type: "Virtual FHS"           # Filesystem Hierarchy Standard
-      directories:
-        - "/home/user"
-        - "/etc"
-        - "/usr"
-        - "/var"
-        - "/proc"
-        - "/sys"
-        - "/root"
-        - "/opt"
-        - "/srv"
-        - "/mnt"
-        - "/media"
-        - "/boot"
-      storage: "RAM only"           # No persistence. Everything dies on close.
-      persistence_warning: >
-        Nothing survives a session restart. This is by design.
+      - name: Setup Python (pour le build)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
 
-    package_managers:
-      apt:
-        commands: ["install", "remove", "update", "upgrade", "search", "show", "list"]
-        additional: ["apt-cache", "dpkg", "add-apt-repository"]
-        ppas_available: 14
-      snap:
-        commands: ["install", "remove", "list", "find"]
-        packages_simulated: 15
-      flatpak:
-        commands: ["install", "remove", "list", "remotes"]
-        apps_simulated: 8
-    
-    systemd:
-      commands: ["start", "stop", "restart", "enable", "disable", "status", "list-units"]
-      additional: ["journalctl", "service"]
-    
-    linux_kernels:
-      variants: 11
-      types: ["generic", "lowlatency", "kvm", "aws", "azure", "gcp", "oracle", "oem", "hwe", "raspi", "liquorix"]
-    
-    python_repl:
-      type: "persistent"
-      integration: true
-    
-    syscalls:
-      - "uname"
-      - "getpid"
-      - "getuid"
-      - "getgid"
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          # Si le terminal utilise PyInstaller pour créer un binaire :
+          pip install pyinstaller
 
-  # ─── COMMANDS (The Inventory) ───────────────────────────────────────────────
-  # Organized by category. Every command is a promise.
-  command_categories:
-    files: ["ls", "cd", "pwd", "mkdir", "rmdir", "rm", "cp", "mv", "cat", "touch", "tree", "stat", "file", "du", "find"]
-    text: ["echo", "printf", "head", "tail", "wc", "grep", "sort", "uniq", "rev", "tac", "nl"]
-    system: ["whoami", "hostname", "uname", "date", "uptime", "id", "ps", "top", "df", "free"]
-    environment: ["env", "export", "set", "unset", "alias", "history", "clear"]
-    ubuntu: ["apt", "apt-get", "apt-cache", "dpkg", "add-apt-repository"]
-    snap: ["snap"]
-    flatpak: ["flatpak"]
-    hash: ["md5sum", "sha256sum", "base64"]
-    math: ["expr", "bc", "factor"]
-    misc: ["uuidgen", "cal", "basename", "dirname", "readlink", "sleep", "seq", "yes"]
+      - name: Build Terminal Binary
+        run: |
+          # On utilise PyInstaller pour compiler le script Python en binaire natif
+          pyinstaller --onefile \
+            --name ${{ matrix.binary_name }} \
+            --distpath dist/ \
+            --workpath build/ \
+            terminal/main.py
+          
+          # Vérification que le binaire existe
+          ls -la dist/
 
-  # ─── PPA SUPPORT (The Risk Matrix) ──────────────────────────────────────────
-  # We list the risk level for every PPA. You deserve to know.
-  ppas_supported:
-    - name: "canonical-kernel-team/unstable"
-      category: "kernel"
-      risk: "high"
-    - name: "canonical-hwe-team/experimental-next"
-      category: "kernel"
-      risk: "high"
-    - name: "damentz/liquorix"
-      category: "kernel"
-      risk: "medium"
-    - name: "graphics-drivers/ppa"
-      category: "graphics"
-      risk: "medium"
-    - name: "ubuntu-toolchain-r/test"
-      category: "toolchain"
-      risk: "medium"
-    - name: "deadsnakes/ppa"
-      category: "python"
-      risk: "low"
-    - name: "git-core/ppa"
-      category: "vcs"
-      risk: "low"
-    - name: "ondrej/php"
-      category: "php"
-      risk: "low"
-    - name: "ondrej/nginx"
-      category: "web"
-      risk: "low"
-    - name: "neovim-ppa/unstable"
-      category: "editor"
-      risk: "low"
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.binary_name }}
+          path: dist/${{ matrix.binary_name }}
+          retention-days: 7
 
-  # ─── INTEGRATION (The API Contract) ─────────────────────────────────────────
-  integration:
-    library_mode:
-      import: "from nexus_mental import MentalTerminal"
-      examples:
-        - "t.bash('ls -la /etc')"
-        - "t.python('sum(range(100))')"
-        - "t.get_state()"
-        - "t.stats()"
-    
-    tool_calling:
-      class: "MentalTerminalTool"
-      schema_method: "get_tool_schema()"
-      execute_method: "execute_tool('mental_bash', {'command': 'apt list'})"
-    
-    installation:
-      method: "git clone"
-      url: "https://github.com/Aissamohammedi88/nexus-mental-terminal"
-      dependencies: "Python stdlib only (no external deps)"
-    
-    python_version: ">=3.10"
+  # ─── JOB 3 : PACKAGE (Création des archives .tar.gz / .zip) ─────────────────
+  # Ce job regroupe les binaires et les fichiers de configuration dans des
+  # archives prêtes à être téléchargées.
+  package:
+    name: "📦 Package Artifacts"
+    needs: [setup, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
 
-  # ─── LIMITATIONS (The Truth) ────────────────────────────────────────────────
-  # This is the most important section. Willison style: document the sharp edges.
-  limitations:
-    - "No persistence between sessions. Everything is lost when you close it."
-    - "No real network access. curl, wget, and ping are simulated."
-    - "No real disk access. All files exist only in RAM."
-    - "Simulated in RAM only. Not a security sandbox."
-    - "Do not confuse with a real terminal. It is a simulation."
-    - "No GPU access. No real hardware acceleration."
+      - name: Create Archives
+        run: |
+          VERSION=${{ needs.setup.outputs.version }}
+          mkdir -p release/
+          
+          # Pour Linux/macOS : .tar.gz
+          for dir in artifacts/nexus-terminal-linux-* artifacts/nexus-terminal-macos-*; do
+            if [ -d "$dir" ]; then
+              BINARY_NAME=$(basename "$dir")
+              tar -czf "release/${BINARY_NAME}-v${VERSION}.tar.gz" -C "$dir" .
+            fi
+          done
+          
+          # Pour Windows : .zip
+          for dir in artifacts/nexus-terminal-windows-*; do
+            if [ -d "$dir" ]; then
+              BINARY_NAME=$(basename "$dir")
+              (cd "$dir" && zip -r "../../release/${BINARY_NAME}-v${VERSION}.zip" .)
+            fi
+          done
+          
+          ls -la release/
 
-  # ─── VERIFICATION (The Proof) ───────────────────────────────────────────────
-  # Commands you can run to verify the claims in this manifest.
-  verification:
-    commands:
-      - description: "Check Python version (must be >= 3.10)"
-        command: "python3 --version"
-      - description: "Check no external dependencies are needed"
-        command: "python3 -c 'import nexus_mental; print(\"OK\")'"
-      - description: "Verify the bash command count (must be >= 100)"
-        command: "python3 -c 'from nexus_mental import MentalTerminal; t=MentalTerminal(); print(len(t.bash.commands))'"
+      - name: Upload Release Archives
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-archives
+          path: release/
+          retention-days: 7
 
-  # ─── ROADMAP (The Plan) ─────────────────────────────────────────────────────
-  roadmap:
-    completed:
-      - "v1.0: bash + vfs + python"
-      - "v2.0: apt + snap + flatpak + systemd + PPAs"
-      - "v2.1: systemd user + cgroups"
-    planned:
-      - "v2.2: docker/podman simulés"
-      - "v3.0: noyaux Linux chargeables"
-      - "v3.1: QEMU mental"
-      - "v3.2: interface web (xterm.js)"
+  # ─── JOB 4 : RELEASE (Publication sur GitHub Releases) ─────────────────────
+  # Ce job final crée la release GitHub et y attache toutes les archives.
+  release:
+    name: "🚀 Publish GitHub Release"
+    needs: [setup, package]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Release Archives
+        uses: actions/download-artifact@v4
+        with:
+          name: release-archives
+          path: release/
 
-  # ─── LLM INTEGRATION NOTES (The Use Cases) ──────────────────────────────────
-  llm_integration_notes: |
-    Ideal for:
-    - Training LLMs on Unix commands
-    - Simulating CLI sessions for testing
-    - Safe sandbox for generated code
-    - Learning Linux/Ubuntu without risk
-    - Prototyping DevOps workflows
-    
-    Limitations to know:
-    - No persistence between sessions
-    - No real network access
-    - Simulated in RAM only
-    - Do not confuse with a real system terminal
-
-  # ─── ATTRIBUTION (The License) ──────────────────────────────────────────────
-  attribution_required: true
-  warning_inclusion: "Pas de présentation comme système réel"
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.setup.outputs.version }}
+          name: "Nexus Terminal IA v${{ needs.setup.outputs.version }}"
+          body: |
+            ## 🧬 Nexus Terminal IA — Release v${{ needs.setup.outputs.version }}
+            
+            **Commit:** `${{ needs.setup.outputs.short_sha }}`
+            
+            ### 📦 Available Binaries
+            - Linux (x86_64, aarch64)
+            - macOS (Intel, Apple Silicon)
+            - Windows (x86_64, ARM64)
+            
+            ### 🛠️ Installation
+            Download the archive for your platform, extract it, and run the binary.
+            
+            ---
+            *Built with ❤️ by Aissa Mohammedi (DGK)*
+          files: release/*
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
