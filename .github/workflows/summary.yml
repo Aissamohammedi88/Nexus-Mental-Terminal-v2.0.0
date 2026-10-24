@@ -1,171 +1,118 @@
-nexus_mental_terminal:
-  version: "2.0.0"
-  author: "Aissa Mohammedi (@Aissamohammedi88)"
-  license: "NEXUS-OPEN-2.0"
-  repository: "https://github.com/Aissamohammedi88/nexus-mental-terminal"
-  
-  description: >
-    Terminal virtuel 100% en mémoire pour agents IA — simulation complète
-    d'environnement Ubuntu/Unix sans accès au système réel
-    
-  purpose: >
-    Sandbox sécurisée pour LLMs afin de tester des commandes, 
-    prototyper des workflows, apprendre Unix/Linux sans risque
-    
-  safety_profile:
-    real_system_access: false
-    network_commands: false
-    disk_access: false
-    execution_environment: "RAM-only sandbox"
-    warning: >
-      CE N'EST PAS UN VRAI SANDBOX DE SÉCURITÉ — c'est un simulateur.
-      Pour vraie isolation: Docker, Firejail, ou bubblewrap
-  
-  capabilities:
-    shell:
-      type: "bash"
-      commands_count: 100+
-      features:
-        - pipelines "|"
-        - redirections "> < >>"
-        - operators "; && ||"
-    
-    filesystem:
-      type: "Virtual FHS"
-      directories:
-        - "/home/user"
-        - "/etc"
-        - "/usr"
-        - "/var"
-        - "/proc"
-        - "/sys"
-        - "/root"
-        - "/opt"
-        - "/srv"
-        - "/mnt"
-        - "/media"
-        - "/boot"
-      storage: "RAM only"
-    
-    package_managers:
-      apt:
-        commands: ["install", "remove", "update", "upgrade", "search", "show", "list"]
-        additional: ["apt-cache", "dpkg", "add-apt-repository"]
-        ppas_available: 14
-      snap:
-        commands: ["install", "remove", "list", "find"]
-        packages_simulated: 15
-      flatpak:
-        commands: ["install", "remove", "list", "remotes"]
-        apps_simulated: 8
-    
-    systemd:
-      commands: ["start", "stop", "restart", "enable", "disable", "status", "list-units"]
-      additional: ["journalctl", "service"]
-    
-    linux_kernels:
-      variants: 11
-      types: ["generic", "lowlatency", "kvm", "aws", "azure", "gcp", "oracle", "oem", "hwe", "raspi", "liquorix"]
-    
-    python_repl:
-      type: "persistent"
-      integration: true
-    
-    syscalls:
-      - "uname"
-      - "getpid"
-      - "getuid"
-      - "getgid"
-  
-  command_categories:
-    fichiers: ["ls", "cd", "pwd", "mkdir", "rmdir", "rm", "cp", "mv", "cat", "touch", "tree", "stat", "file", "du", "find"]
-    texte: ["echo", "printf", "head", "tail", "wc", "grep", "sort", "uniq", "rev", "tac", "nl"]
-    systeme: ["whoami", "hostname", "uname", "date", "uptime", "id", "ps", "top", "df", "free"]
-    environment: ["env", "export", "set", "unset", "alias", "history", "clear"]
-    ubuntu: ["apt", "apt-get", "apt-cache", "dpkg", "add-apt-repository"]
-    snap: ["snap"]
-    flatpak: ["flatpak"]
-    hash: ["md5sum", "sha256sum", "base64"]
-    math: ["expr", "bc", "factor"]
-    divers: ["uuidgen", "cal", "basename", "dirname", "readlink", "sleep", "seq", "yes"]
-  
-  ppas_supportes:
-    - name: "canonical-kernel-team/unstable"
-      category: "kernel"
-      risk: "high"
-    - name: "canonical-hwe-team/experimental-next"
-      category: "kernel"
-      risk: "high"
-    - name: "damentz/liquorix"
-      category: "kernel"
-      risk: "medium"
-    - name: "graphics-drivers/ppa"
-      category: "graphics"
-      risk: "medium"
-    - name: "ubuntu-toolchain-r/test"
-      category: "toolchain"
-      risk: "medium"
-    - name: "deadsnakes/ppa"
-      category: "python"
-      risk: "low"
-    - name: "git-core/ppa"
-      category: "vcs"
-      risk: "low"
-    - name: "ondrej/php"
-      category: "php"
-      risk: "low"
-    - name: "ondrej/nginx"
-      category: "web"
-      risk: "low"
-    - name: "neovim-ppa/unstable"
-      category: "editor"
-      risk: "low"
-  
-  integration:
-    library_mode:
-      import: "from nexus_mental import MentalTerminal"
-      examples:
-        - "t.bash('ls -la /etc')"
-        - "t.python('sum(range(100))')"
-        - "t.get_state()"
-        - "t.stats()"
-    
-    tool_calling:
-      class: "MentalTerminalTool"
-      schema_method: "get_tool_schema()"
-      execute_method: "execute_tool('mental_bash', {'command': 'apt list'})"
-    
-    installation:
-      method: "git clone"
-      url: "https://github.com/Aissamohammedi88/nexus-mental-terminal"
-      dependencies: "Python stdlib only (no external deps)"
-    
-    python_version: ">=3.10"
-  
-  roadmap:
-    completed:
-      - "v1.0: bash + vfs + python"
-      - "v2.0: apt + snap + flatpak + systemd + PPAs"
-    planned:
-      - "v2.1: systemd user + cgroups"
-      - "v2.2: docker/podman simulés"
-      - "v3.0: noyaux Linux chargeables"
-      - "v3.1: QEMU mental"
-      - "v3.2: interface web (xterm.js)"
-  
-  llm_integration_notes: >
-    Idéal pour:
-    - Entraînement de LLMs sur commandes Unix
-    - Simulation de sessions CLI pour testing
-    - Sandbox sûre pour exécution de code généré
-    - Apprentissage sans danger de Linux/Ubuntu
-    - Prototypage de workflows DevOps
-    
-    Limites à connaître:
-    - Aucune persistance entre sessions
-    - Aucun accès réseau réel
-    - Simulé en RAM seulement
-    - Ne pas confondre avec vrai terminal système
+# ═══════════════════════════════════════════════════════════════════════════════
+# TENCENT KUBERNETES ENGINE (TKE) — TERMINAL MENTAL IA
+# Multi-Arch Build (AMD64/ARM64) + Trivy Security Scan + Zero-Downtime Deploy.
+# ═══════════════════════════════════════════════════════════════════════════════
 
-  attribution_required: true
-  warning_inclusion: "Pas de présentation comme système réel"
+name: TKE-Core Production
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+# Principe du moindre privilège. On n'utilise pas write-all.
+permissions:
+  contents: read
+  packages: write
+
+# Évite les déploiements concurrents sur la même branche
+concurrency:
+  group: tke-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TENCENT_REGISTRY: ccr.ccs.tencentyun.com
+  IMAGE_NAME: n/x
+  K8S_DEPLOYMENT: x
+  K8S_NAMESPACE: default
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # JOB 1 : BUILD, SCAN & PUSH MULTI-ARCH
+  # ─────────────────────────────────────────────────────────────────────────────
+  build-and-push:
+    name: "🏗️ Build, Scan & Push"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Tencent Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.TENCENT_REGISTRY }}
+          username: ${{ secrets.TENCENT_REGISTRY_USERNAME }}
+          password: ${{ secrets.TENCENT_REGISTRY_PASSWORD }}
+
+      - name: Build and Push (Multi-Arch)
+        id: build-push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          # Crée une image unifiée contenant l'AMD64 et l'ARM64
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ${{ env.TENCENT_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.TENCENT_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run Trivy Vulnerability Scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ env.TENCENT_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}'
+          format: 'table'
+          exit-code: '1' # Bloque le pipeline si faille CRITICAL ou HIGH
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # JOB 2 : DEPLOY TO TKE (ZERO DOWNTIME)
+  # ─────────────────────────────────────────────────────────────────────────────
+  deploy:
+    name: "🚀 Deploy to TKE"
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    timeout-minutes: 10
+    environment:
+      name: production
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure Kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          # Décode le Kubeconfig encodé en base64 (sécurité)
+          echo "${{ secrets.KUBECONFIG_BASE64 }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Verify Connection to TKE
+        run: kubectl get nodes
+
+      - name: Deploy New Image
+        run: |
+          kubectl set image deployment/${{ env.K8S_DEPLOYMENT }} \
+            *=${TENCENT_REGISTRY}/${IMAGE_NAME}:${{ github.sha }} \
+            -n ${{ env.K8S_NAMESPACE }}
+          
+      - name: Verify Rollout Status
+        run: |
+          kubectl rollout status deployment/${{ env.K8S_DEPLOYMENT }} \
+            -n ${{ env.K8S_NAMESPACE }} --timeout=5m
+
+      - name: Post-Deployment Status
+        if: always()
+        run: |
+          kubectl get pods -n ${{ env.K8S_NAMESPACE }} -l app=${{ env.K8S_DEPLOYMENT }}
