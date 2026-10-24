@@ -37,14 +37,14 @@ jobs:
     
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # 1. PRÉPARATION MULTI-ARCHITECTURE (amd64 + arm64)
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       # 2. LOGIN AU REGISTRE TENCENT
       - name: Login to Tencent Container Registry
@@ -56,7 +56,7 @@ jobs:
 
       # 3. BUILD & PUSH MULTI-ARCH EN UNE SEULE ÉTAPE
       - name: Build and Push Multi-Arch Image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           push: true
@@ -80,7 +80,7 @@ jobs:
 
       # 5. UPLOAD DES RÉSULTATS SUR GITHUB SECURITY
       - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: 'trivy-results.sarif'
@@ -96,7 +96,7 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # 1. CONFIGURATION DU KUBECONFIG TENCENT
       - name: Set up Kubeconfig
