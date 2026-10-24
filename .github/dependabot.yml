@@ -1,117 +1,114 @@
-# ═══════════════════════════════════════════════════════════════════════════
-# Nexus Mental Terminal v2.0.0 — Configuration Dependabot
-# ═══════════════════════════════════════════════════════════════════════════
-#
-# Projet     : Nexus Mental Terminal — Terminal virtuel en mémoire
-# Auteur     : Aissa Mohammedi (DGK) — @Aissamohammedi88
-# Licence    : NEXUS-OPEN-2.0
-#
-# Documentation officielle :
-# https://docs.github.com/code-security/dependabot/dependabot-version-updates/
-# configuration-options-for-the-dependabot.yml-file
-#
-# Notes importantes pour ce projet :
-#   • Nexus Mental Terminal n'a AUCUNE dépendance externe (stdlib Python
-#     uniquement) — c'est une règle du CONTRIBUTING.md. Les mises à jour
-#     "pip" seront donc limitées aux dépendances de développement
-#     (pytest dans requirements-dev.txt si présent).
-#   • Les écosystèmes activés ci-dessous couvrent :
-#       - pip          → pyproject.toml / requirements*.txt (outils dev)
-#       - github-actions → actions utilisées dans .github/workflows/
-#       - docker       → Dockerfile (image de base)
-# ═══════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════
+# NEXUS AUTOMATED DEPENDENCY MAINTENANCE
+# ═══════════════════════════════════════════════════════════════════════════════
+# 
+# Objectif : Maintenir les dépendances à jour sans polluer l'historique Git.
+# Stratégie : 
+#   - Regroupement des mises à jour mineures et correctives (1 PR / écosystème).
+#   - Séparation stricte des mises à jour de sécurité (priorité absolue).
+#   - Assignation automatique au mainteneur principal.
+#   - Planification précise via CRON (évite les pics de charge).
+# ═══════════════════════════════════════════════════════════════════════════════
 
 version: 2
 
 updates:
-  # ───────────────────────────────────────────────────────────────────────
-  # 1. Python (pip) — dépendances de développement uniquement
-  # ───────────────────────────────────────────────────────────────────────
-  # Le cœur du projet utilise uniquement la stdlib Python.
-  # Dependabot surveille néanmoins les outils de dev (pytest, flake8...)
-  # s'ils sont déclarés dans pyproject.toml ou requirements-dev.txt.
+  # ─── 1. ÉCOSYSTÈME PYTHON (Noyau & API) ─────────────────────────────────────
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "04:00"
-      timezone: "Europe/Paris"
-    # Limite le nombre de PRs ouvertes simultanément
-    open-pull-requests-limit: 5
-    # Étiquettes pour faciliter le triage des PRs
+      interval: "cron"
+      cronjob: "0 2 * * 1" # Chaque lundi à 02:00 UTC (Heure creuse)
+      timezone: "America/Montreal"
+    assignees:
+      - "Aissamohammedi88"
     labels:
       - "dependencies"
       - "python"
-      - "dev-deps"
-    # Regroupe les mises à jour mineures/patchs pour réduire le bruit
-    groups:
-      dev-dependencies:
-        applies-to: "version-updates"
-        patterns:
-          - "pytest*"
-          - "flake8*"
-          - "mypy*"
-          - "black"
-          - "ruff*"
-        update-types:
-          - "minor"
-          - "patch"
+      - "automated"
     commit-message:
-      prefix: "chore(deps)"
-      prefix-development: "chore(dev-deps)"
+      prefix: "chore(deps):"
       include: "scope"
-    reviewers:
-      - "Aissamohammedi88"
-
-  # ───────────────────────────────────────────────────────────────────────
-  # 2. GitHub Actions — mises à jour des actions du workflow CI/CD
-  # ───────────────────────────────────────────────────────────────────────
-  # Surveille toutes les actions utilisées dans .github/workflows/
-  # (actions/checkout, actions/setup-python, docker/*, aquasecurity/trivy...)
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "04:00"
-      timezone: "Europe/Paris"
-    open-pull-requests-limit: 5
-    labels:
-      - "dependencies"
-      - "github-actions"
-      - "ci"
-    # Regroupe toutes les mises à jour d'actions en une seule PR
+    # Regroupement intelligent pour éviter 50 Pull Requests
     groups:
-      github-actions:
+      python-minor-patch:
         applies-to: "version-updates"
         patterns:
           - "*"
-    commit-message:
-      prefix: "ci(deps)"
-      include: "scope"
-    reviewers:
-      - "Aissamohammedi88"
+        update-types:
+          - "minor"
+          - "patch"
+      python-security:
+        applies-to: "security-updates"
+        patterns:
+          - "*"
+    # Ignorer les mises à jour majeures pour les librairies critiques
+    # (à décommenter si une librairie casse la compatibilité)
+    # ignore:
+    #   - dependency-name: "pydantic"
+    #     update-types: ["version-update:semver-major"]
 
-  # ───────────────────────────────────────────────────────────────────────
-  # 3. Docker — image de base du Dockerfile
-  # ───────────────────────────────────────────────────────────────────────
-  # Surveille les mises à jour de l'image de base (ex: python:3.12-slim).
-  # Important pour le scan sécurité Trivy du workflow tencent.yml :
-  # une image de base à jour = moins de vulnérabilités critiques.
-  - package-ecosystem: "docker"
+  # ─── 2. ACTIONS DU PIPELINE CI (Sécurité de la Supply Chain) ─────────────────
+  - package-ecosystem: "github-actions"
     directory: "/"
+    schedule:
+      interval: "cron"
+      cronjob: "0 3 * * 1" # Lundi à 03:00 UTC (après Python)
+      timezone: "America/Montreal"
+    assignees:
+      - "Aissamohammedi88"
+    labels:
+      - "dependencies"
+      - "ci-cd"
+      - "security"
+    commit-message:
+      prefix: "ci(deps):"
+    groups:
+      actions-minor-patch:
+        applies-to: "version-updates"
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # ─── 3. ÉCOSYSTÈME NODE.JS (Interface & Frontend) ──────────────────────────
+  - package-ecosystem: "npm"
+    directory: "/ui" # À ajuster selon l'emplacement de ton package.json
+    schedule:
+      interval: "cron"
+      cronjob: "0 4 * * 1" # Lundi à 04:00 UTC
+      timezone: "America/Montreal"
+    assignees:
+      - "Aissamohammedi88"
+    labels:
+      - "dependencies"
+      - "node"
+      - "automated"
+    commit-message:
+      prefix: "chore(ui-deps):"
+    groups:
+      npm-minor-patch:
+        applies-to: "version-updates"
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # ─── 4. ÉCOSYSTÈME DOCKER (Conteneurs & Déploiement) ───────────────────────
+  - package-ecosystem: "docker"
+    directory: "/" # Où se trouve ton Dockerfile
     schedule:
       interval: "weekly"
       day: "monday"
-      time: "04:00"
-      timezone: "Europe/Paris"
-    open-pull-requests-limit: 3
+      time: "05:00"
+      timezone: "America/Montreal"
+    assignees:
+      - "Aissamohammedi88"
     labels:
       - "dependencies"
       - "docker"
+      - "infrastructure"
     commit-message:
-      prefix: "chore(docker)"
-      include: "scope"
-    reviewers:
-      - "Aissamohammedi88"
+      prefix: "build(deps):"
