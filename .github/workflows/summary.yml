@@ -1,131 +1,185 @@
 # ═══════════════════════════════════════════════════════════════════════════════
-# NEXUS MENTAL TERMINAL
-# A virtual, RAM-only Unix environment for AI agents.
+# TERMINAL MENTAL — RELEASE SUMMARY WORKFLOW
+# Génère un résumé de release multi-plateforme et l'affiche dans l'onglet Actions.
+# Inspiré des meilleures pratiques de GitHub, Simon Willison, SSW.Rules,
+# WarpBuild, OneUptime, Tencent/ncnn, et du projet Terminal Mental.
+# Auteur : Aissa Mohammedi (DGK)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-project: "nexus_mental_terminal"
-version: "2.0.0"
-author: "Aissa Mohammedi (@Aissamohammedi88)"
-license: "NEXUS-OPEN-2.0"
-repository: "https://github.com/Aissamohammedi88/nexus-mental-terminal"
-python_requires: ">=3.10"
-dependencies: "none (Python standard library only)"
+name: Release Summary
 
-description: >
-  A virtual Unix environment that lives entirely in RAM. It simulates a
-  complete Ubuntu/Unix system — bash shell, filesystem, package managers,
-  systemd — without touching the real host system.
+on:
+  push:
+    tags:
+      - 'v*'  # Se déclenche sur les tags de version (ex: v4.0.0)
+  workflow_dispatch:
 
-purpose: >
-  To provide a safe, deterministic sandbox where LLMs and developers can
-  test commands, prototype workflows, and learn Unix/Linux without the
-  risk of modifying a real machine.
+permissions:
+  contents: read
+  actions: read
 
-safety:
-  real_system_access: false
-  network_commands: false
-  disk_access: false
-  execution_environment: "RAM-only"
-  warning: >
-    This is a SIMULATOR, not a security sandbox. For real isolation,
-    use Docker, Firejail, or bubblewrap. Do not present this as a real
-    operating system.
+jobs:
+  # ─── JOB 1 : BUILD MULTI-PLATEFORME ─────────────────────────────────────────
+  # Compile Terminal Mental pour Linux, macOS et Windows.
+  # Inspiré de la matrice de Tencent/ncnn et du projet Terminal Mental.
+  build:
+    name: "🏗️ Build (${{ matrix.os }} / ${{ matrix.arch }})"
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # --- Linux ---
+          - os: ubuntu-22.04
+            arch: x86_64
+            binary_name: terminal-mental-linux-amd64
+          - os: ubuntu-22.04-arm
+            arch: aarch64
+            binary_name: terminal-mental-linux-arm64
+          # --- macOS ---
+          - os: macos-14
+            arch: x86_64
+            binary_name: terminal-mental-macos-amd64
+          - os: macos-14
+            arch: aarch64
+            binary_name: terminal-mental-macos-arm64
+          # --- Windows ---
+          - os: windows-2022
+            arch: x86_64
+            binary_name: terminal-mental-windows-amd64.exe
+          - os: windows-2022
+            arch: aarch64
+            binary_name: terminal-mental-windows-arm64.exe
 
-capabilities:
-  shell:
-    type: bash
-    commands: 100+
-    features:
-      - "pipes (|)"
-      - "redirections (>, <, >>)"
-      - "operators (;, &&, ||)"
-  filesystem:
-    type: "Virtual FHS (Filesystem Hierarchy Standard)"
-    root: "/"
-    storage: "RAM only"
-  package_managers:
-    apt:
-      commands: ["install", "remove", "update", "upgrade", "search", "show", "list"]
-      tools: ["apt-cache", "dpkg", "add-apt-repository"]
-      ppas_supported: 10
-    snap:
-      commands: ["install", "remove", "list", "find"]
-      packages: 15
-    flatpak:
-      commands: ["install", "remove", "list", "remotes"]
-      apps: 8
-  systemd:
-    commands: ["start", "stop", "restart", "enable", "disable", "status", "list-units"]
-    tools: ["journalctl", "service"]
-  kernels:
-    variants: 11
-    types: ["generic", "lowlatency", "liquorix", "aws", "azure", "gcp", "oracle", "oem", "hwe", "raspi", "kvm"]
-  python_repl:
-    type: "persistent"
-  syscalls:
-    - uname
-    - getpid
-    - getuid
-    - getgid
+    outputs:
+      # Expose le nom des binaires pour le job de résumé
+      linux_amd64: ${{ steps.set-outputs.outputs.linux_amd64 }}
+      linux_arm64: ${{ steps.set-outputs.outputs.linux_arm64 }}
+      macos_amd64: ${{ steps.set-outputs.outputs.macos_amd64 }}
+      macos_arm64: ${{ steps.set-outputs.outputs.macos_arm64 }}
+      windows_amd64: ${{ steps.set-outputs.outputs.windows_amd64 }}
+      windows_arm64: ${{ steps.set-outputs.outputs.windows_arm64 }}
 
-commands:
-  files: ["ls", "cd", "pwd", "mkdir", "rmdir", "rm", "cp", "mv", "cat", "touch", "tree", "stat", "file", "du", "find"]
-  text: ["echo", "printf", "head", "tail", "wc", "grep", "sort", "uniq", "rev", "tac", "nl"]
-  system: ["whoami", "hostname", "uname", "date", "uptime", "id", "ps", "top", "df", "free"]
-  environment: ["env", "export", "set", "unset", "alias", "history", "clear"]
-  ubuntu: ["apt", "apt-get", "apt-cache", "dpkg", "add-apt-repository"]
-  snap: ["snap"]
-  flatpak: ["flatpak"]
-  hash: ["md5sum", "sha256sum", "base64"]
-  math: ["expr", "bc", "factor"]
-  misc: ["uuidgen", "cal", "basename", "dirname", "readlink", "sleep", "seq", "yes"]
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-ppas:
-  - { name: "canonical-kernel-team/unstable", category: kernel, risk: high }
-  - { name: "canonical-hwe-team/experimental-next", category: kernel, risk: high }
-  - { name: "damentz/liquorix", category: kernel, risk: medium }
-  - { name: "graphics-drivers/ppa", category: graphics, risk: medium }
-  - { name: "ubuntu-toolchain-r/test", category: toolchain, risk: medium }
-  - { name: "deadsnakes/ppa", category: python, risk: low }
-  - { name: "git-core/ppa", category: vcs, risk: low }
-  - { name: "ondrej/php", category: php, risk: low }
-  - { name: "ondrej/nginx", category: web, risk: low }
-  - { name: "neovim-ppa/unstable", category: editor, risk: low }
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
-integration:
-  library:
-    import: "from nexus_mental import MentalTerminal"
-    examples:
-      - "t.bash('ls -la /etc')"
-      - "t.python('sum(range(100))')"
-      - "t.get_state()"
-      - "t.stats()"
-  tool_calling:
-    class: MentalTerminalTool
-    schema: get_tool_schema()
-    execute: "execute_tool('mental_bash', {'command': 'apt list'})"
-  install:
-    method: "git clone"
-    url: "https://github.com/Aissamohammedi88/nexus-mental-terminal"
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
 
-roadmap:
-  completed: ["v1.0 (bash, vfs, python)", "v2.0 (apt, snap, flatpak, systemd, ppas)"]
-  planned:
-    - "v2.1 (systemd user + cgroups)"
-    - "v2.2 (docker/podman simulation)"
-    - "v3.0 (loadable Linux kernels)"
-    - "v3.1 (QEMU mental)"
-    - "v3.2 (web interface via xterm.js)"
+      - name: Build Binary
+        run: |
+          pyinstaller --onefile \
+            --name ${{ matrix.binary_name }} \
+            --distpath dist/ \
+            --workpath build/ \
+            terminal/main.py
+          ls -la dist/
 
-use_cases:
-  - "Training LLMs on Unix commands"
-  - "Simulating CLI sessions for testing"
-  - "Safe sandbox for generated code"
-  - "Learning Linux without risk"
-  - "Prototyping DevOps workflows"
+      - name: Set Outputs
+        id: set-outputs
+        run: |
+          # Expose les noms de fichiers pour le résumé
+          echo "linux_amd64=terminal-mental-linux-amd64" >> $GITHUB_OUTPUT
+          echo "linux_arm64=terminal-mental-linux-arm64" >> $GITHUB_OUTPUT
+          echo "macos_amd64=terminal-mental-macos-amd64" >> $GITHUB_OUTPUT
+          echo "macos_arm64=terminal-mental-macos-arm64" >> $GITHUB_OUTPUT
+          echo "windows_amd64=terminal-mental-windows-amd64.exe" >> $GITHUB_OUTPUT
+          echo "windows_arm64=terminal-mental-windows-arm64.exe" >> $GITHUB_OUTPUT
 
-limitations:
-  - "No persistence between sessions"
-  - "No real network access"
-  - "RAM-only simulation"
-  - "Not a real system terminal"
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.binary_name }}
+          path: dist/${{ matrix.binary_name }}
+          retention-days: 7
+
+  # ─── JOB 2 : SUMMARY ────────────────────────────────────────────────────────
+  # Génère le résumé de release à afficher dans l'onglet Actions.
+  # S'exécute TOUJOURS (if: always()) pour afficher le statut même en cas d'échec.
+  # Inspiré de GitHub/Copilot, WarpBuild, SSW.Rules et Simon Willison.
+  summary:
+    name: "📊 Release Summary"
+    runs-on: ubuntu-latest
+    needs: build
+    if: always()  # Toujours exécuter, même si le build échoue[reference:0]
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Extract Version
+        id: version
+        run: |
+          # Extrait la version du tag (ex: refs/tags/v4.0.0 -> 4.0.0)
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Generate Summary
+        run: |
+          # ─── CONFIGURATION ───
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          SHORT_SHA="${{ steps.version.outputs.SHORT_SHA }}"
+          REPO="${{ github.repository }}"
+          RUN_ID="${{ github.run_id }}"
+
+          # ─── STATUT GLOBAL ───
+          # On détermine le statut en fonction du résultat du job de build.
+          # (On utilise l'API GitHub pour vérifier le statut du job précédent.)
+          BUILD_STATUS="${{ needs.build.result }}"
+          if [ "$BUILD_STATUS" = "success" ]; then
+            STATUS_ICON="✅"
+            STATUS_TEXT="All builds succeeded"
+          else
+            STATUS_ICON="❌"
+            STATUS_TEXT="Some builds failed"
+          fi
+
+          # ─── GÉNÉRATION DU RÉSUMÉ (Heredoc pour éviter les répétitions) ───
+          # Inspiré de WarpBuild et OneUptime : un seul bloc Markdown.
+          cat << EOF >> "$GITHUB_STEP_SUMMARY"
+          ### $STATUS_ICON Terminal Mental — Release v${VERSION}
+
+          **Status:** $STATUS_TEXT
+
+          | Platform | Arch | Status | Artifact |
+          |----------|------|--------|----------|
+          | Linux    | x86_64 | $([ "$BUILD_STATUS" = "success" ] && echo "✅" || echo "❌") | [terminal-mental-linux-amd64](https://github.com/${REPO}/actions/runs/${RUN_ID}/artifacts) |
+          | Linux    | aarch64 | $([ "$BUILD_STATUS" = "success" ] && echo "✅" || echo "❌") | [terminal-mental-linux-arm64](https://github.com/${REPO}/actions/runs/${RUN_ID}/artifacts) |
+          | macOS    | x86_64 | $([ "$BUILD_STATUS" = "success" ] && echo "✅" || echo "❌") | [terminal-mental-macos-amd64](https://github.com/${REPO}/actions/runs/${RUN_ID}/artifacts) |
+          | macOS    | aarch64 | $([ "$BUILD_STATUS" = "success" ] && echo "✅" || echo "❌") | [terminal-mental-macos-arm64](https://github.com/${REPO}/actions/runs/${RUN_ID}/artifacts) |
+          | Windows  | x86_64 | $([ "$BUILD_STATUS" = "success" ] && echo "✅" || echo "❌") | [terminal-mental-windows-amd64.exe](https://github.com/${REPO}/actions/runs/${RUN_ID}/artifacts) |
+          | Windows  | aarch64 | $([ "$BUILD_STATUS" = "success" ] && echo "✅" || echo "❌") | [terminal-mental-windows-arm64.exe](https://github.com/${REPO}/actions/runs/${RUN_ID}/artifacts) |
+
+          ### Release Information
+          - **Version:** \`v${VERSION}\`
+          - **Tag:** \`v${VERSION}\`
+          - **Commit:** \`${SHORT_SHA}\`
+          - **Workflow Run:** [View Details](https://github.com/${REPO}/actions/runs/${RUN_ID})
+
+          ### Next Steps
+          1. ✅ Verify all binaries are signed and tested.
+          2. 📝 Update the release notes on GitHub.
+          3. 🚀 Publish the release to the marketplace.
+          4. 📢 Notify the community (Discord, Twitter, etc.).
+
+          EOF
+
+          # ─── SECTION DÉPLIABLE POUR LES LOGS (Progressive Disclosure) ───
+          # Inspiré de GitHub/Copilot skill et WarpBuild : logs derrière <details>.
+          cat << EOF >> "$GITHUB_STEP_SUMMARY"
+          <details>
+          <summary>Build Logs & Diagnostics</summary>
+
+          ```text
+          Build Status: $BUILD_STATUS
+          Version: $VERSION
+          Commit: $SHORT_SHA
